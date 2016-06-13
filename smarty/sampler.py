@@ -106,7 +106,7 @@ class AtomTypeSampler(object):
 
         # Compute atomtype statistics on molecules.
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
-        self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
+        if self.verbose: self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
 
         # Compute total atoms
         self.total_atoms = 0.0
@@ -287,7 +287,7 @@ class AtomTypeSampler(object):
             result = re.match('\[(.+)\]', atomtype)
             proposed_atomtype = '[' + result.groups(1)[0] + '&' + decorator + ']'
             proposed_typename = atomtype_typename + ' ' + decorator_typename
-            print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atomtype, atomtype_typename, decorator, decorator_typename, proposed_atomtype, proposed_typename))
+            if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atomtype, atomtype_typename, decorator, decorator_typename, proposed_atomtype, proposed_typename))
 
             # Check that we haven't already determined this atom type isn't matched in the dataset.
             if proposed_atomtype in self.atomtypes_with_no_matches:
