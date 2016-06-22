@@ -182,9 +182,8 @@ class AtomTypeSampler(object):
         current_atomtypes = [ typename for (smarts, typename) in atomtypes ]
         reference_atomtypes = [ typename for typename in self.reference_atomtypes ]
         # check that current atom types are not in reference atom types
-        for atomtype in current_atomtypes:
-            if atomtype in reference_atomtypes:
-                raise Exception("Current atom type %s is a reference atom type" % atomtype)
+        if set(current_atomtypes) & set(reference_atomtypes):
+            raise Exception("Current and reference atom types must be unique")
         # Add current atom types
         for atomtype in current_atomtypes:
             graph.add_node(atomtype, bipartite=0)
