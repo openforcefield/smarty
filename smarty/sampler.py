@@ -95,6 +95,8 @@ class AtomTypeSampler(object):
 
         # Read atomtypes and decorators.
         self.atomtypes = AtomTyper.read_typelist(basetypes_filename)
+        for idx, [smarts, typename] in enumerate(self.atomtypes):
+            self.atomtypes[idx] = [smarts, 'c_'+typename]
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
 
@@ -176,12 +178,17 @@ class AtomTypeSampler(object):
         initial_time = time.time()
         import networkx as nx
         graph = nx.Graph()
-        # Add current atom types
+        # Get current atomtypes and reference atom types
         current_atomtypes = [ typename for (smarts, typename) in atomtypes ]
+        reference_atomtypes = [ typename for typename in self.reference_atomtypes ]
+        # check that current atom types are not in reference atom types
+        for atomtype in current_atomtypes:
+            if atomtype in reference_atomtypes:
+                raise Exception("Current atom type %s is a reference atom type" % atomtype)
+        # Add current atom types
         for atomtype in current_atomtypes:
             graph.add_node(atomtype, bipartite=0)
         # Add reference atom types
-        reference_atomtypes = [ typename for typename in self.reference_atomtypes ]
         for atomtype in reference_atomtypes:
             graph.add_node(atomtype, bipartite=1)
         # Add edges.
