@@ -82,10 +82,6 @@ class AtomTypeSampler(object):
         -----
         This is just a proof of concept.  No scoring of molecular properties is performed.
 
-        TODO
-        ----
-        * Maintain a list of types that do not type any molecules so that we can avoid proposing these again.
-
         """
 
         self.verbose = verbose
