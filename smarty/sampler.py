@@ -97,6 +97,8 @@ class AtomTypeSampler(object):
         # Store a copy of the basetypes, as these (and only these) are allowed 
         # to end up with zero occupancy
         self.basetypes = copy.deepcopy(self.atomtypes)
+        # Store smarts for basetypes
+        self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
         # Store a deep copy of the molecules since they will be annotated
         self.molecules = copy.deepcopy(molecules)
@@ -322,7 +324,7 @@ class AtomTypeSampler(object):
                     # Store this atomtype to speed up future rejections
                     self.atomtypes_with_no_matches.add(proposed_atomtype)
                 # Reject if parent type is now unused, UNLESS it is a base type
-                if (proposed_atom_typecounts[atomtype_typename] == 0) and (atomtype_typename not in self.basetypes):
+                if (proposed_atom_typecounts[atomtype_typename] == 0) and (atomtype not in self.basetypes_smarts):
                     # Reject because new type is unused in dataset.
                     if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atomtype, atomtype_typename))
                     valid_proposal = False
