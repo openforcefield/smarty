@@ -446,7 +446,7 @@ class AtomTypeSampler(object):
         molecules
 
         RETURNS
-
+#
         atom_typecounts (dict) - counts of number of atoms containing each atomtype
         molecule_typecounds (dict) - counts of number of molecules containing each atom type
 
