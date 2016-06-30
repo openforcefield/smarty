@@ -111,10 +111,10 @@ class AtomTypeSampler(object):
         # Ensure all base types are in initial types (and add if not) as 
         # base types are generics (such as elemental) and need to be present 
         # at the start
-        initial_smarts = [ smarts for (smarts, name) in self.initialtypes ]
+        initial_smarts = [ smarts for (smarts, name) in self.atomtypes ]
         for [smarts, typename] in self.basetypes:
             if smarts not in initial_smarts:
-                self.initialtypes.append( [ smarts, typename] )
+                self.atomtypes.append( [ smarts, typename] )
                 if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename) )
 
         # Store initially populated base types, as these will be retained even 
@@ -132,6 +132,9 @@ class AtomTypeSampler(object):
         # Compute atomtype statistics on molecules.
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
         if self.verbose: self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
+        # For use later, also see which base types are used (get those stats)
+        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, self.molecules )
+
 
         # Compute total atoms
         self.total_atoms = 0.0
@@ -165,16 +168,23 @@ class AtomTypeSampler(object):
         # This is used for efficiency.
         self.atomtypes_with_no_matches = set()
         
-        # Track used vs unused base types
+        # Track used vs unused base types - unused base types are not retained
         for (smarts, atom_type) in self.basetypes:
             # If this type is used, then track it
-            if atom_typecounts[atom_type] > 0:
+            if basetype_typecounts[atom_type] > 0:
                 self.used_basetypes.append( [ smarts, atom_type] )
                 if self.verbose: print("Storing used base type `%s`, name `%s` with count %s..." % (smarts, atom_type, atom_typecounts[atom_type] )) 
             # If unused, it matches nothing in the set
             else:  
                 self.atomtypes_with_no_matches.add( smarts )
-                if self.verbose: print("Storing atom type `%s`, which is unused, so that it will not be tested further." % smarts )   
+                if self.verbose: print("Storing base atom type `%s`, which is unused, so that it will not be tested further." % smarts )   
+        # Track unused initial types that are not base types as we also don't 
+        # need to retain those
+        for (smarts, atom_type) in self.atomtypes:
+            if atom_typecounts[atom_type] == 0 and (smarts not in basetypes_smarts):
+                self.atomtypes_with_no_matches.add( smarts )
+                if self.verbose: print("Storing initial atom type `%s`, which is unused, so that it will not be tested further." % smarts )   
+
 
         return
 
