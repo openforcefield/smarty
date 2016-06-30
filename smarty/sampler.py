@@ -286,6 +286,8 @@ class AtomTypeSampler(object):
         atom_type_matches : list of (current_atomtype, reference_atomtype, counts)
             List of atom type matches.
 
+        Returns fraction_matched_atoms, the fractional count of matched atoms
+
         """
         print('Atom type matches:')
         total_atom_type_matches = 0
@@ -299,6 +301,7 @@ class AtomTypeSampler(object):
         fraction_matched_atoms = float(total_atom_type_matches) / float(self.total_atoms)
         print('%d / %d total atoms match (%.3f %%)' % (total_atom_type_matches, self.total_atoms, fraction_matched_atoms * 100))
 
+        return fraction_matched_atoms
 
     def sample_atomtypes(self):
         """
@@ -558,6 +561,11 @@ class AtomTypeSampler(object):
         trajFile : str, optional, default=None
             Output trajectory filename
 
+        Returns
+        ----------
+        fraction_matched_atoms : float
+            fraction of total atoms matched successfully at end of run
+
         """
         self.traj = []
         for iteration in range(niterations):
@@ -574,7 +582,7 @@ class AtomTypeSampler(object):
 
                 # Compute atomtype statistics on molecules.
                 [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
-                self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
+                fraction_matched_atoms = self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
 
                 # Get data as list of csv strings
                 lines = self.save_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
@@ -591,3 +599,5 @@ class AtomTypeSampler(object):
             start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
             f.writelines(start + self.traj)
             f.close()
+
+        return fraction_matched_atoms
