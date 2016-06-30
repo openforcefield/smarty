@@ -102,6 +102,12 @@ class AtomTypeSampler(object):
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
+        # Store initially populated base types, as these will be retained even 
+        # if they have zero occupancy (whereas unpopulated base types
+        # need never be used ever and can be deleted- i.e. if we have no 
+        # phosphorous in the set we don't need a phosphorous base type)
+        self.used_basetypes = []
+
         # Store a deep copy of the molecules since they will be annotated
         self.molecules = copy.deepcopy(molecules)
 
@@ -139,10 +145,21 @@ class AtomTypeSampler(object):
                 for atom in molecule.GetAtoms():
                     atomtype = atom.GetType()
                     self.reference_atomtypes_atomcount[atomtype] += 1
-
+        
         # Maintain a list of SMARTS matches without any atom type matches in the dataset
         # This is used for efficiency.
         self.atomtypes_with_no_matches = set()
+        
+        # Track used vs unused base types
+        for (smarts, atom_type) in self.basetypes:
+            # If this type is used, then track it
+            if atom_typecounts[atom_type] > 0:
+                self.used_basetypes.append( [ smarts, atom_type] )
+                if self.verbose: print("Storing used base type `%s`, name `%s` with count %s..." % (smarts, atom_type, atom_typecounts[atom_type] )) 
+            # If unused, it matches nothing in the set
+            else:  
+                self.atomtypes_with_no_matches.add( smarts )
+                if self.verbose: print("Storing atom type `%s`, which is unused, so that it will not be tested further." % smarts )   
 
         return
 
@@ -274,6 +291,12 @@ class AtomTypeSampler(object):
             atomtype_index = random.randint(0, natomtypes-1)
             (atomtype, typename) = proposed_atomtypes[atomtype_index]
             if self.verbose: print("Attempting to destroy atom type %s : %s..." % (atomtype, typename))
+            # Reject deletion of (populated) base types as we want to retain 
+            # generics even if empty
+            if [atomtype, typename] in self.used_basetypes: 
+                if self.verbose: print("Destruction rejected for atom type %s because this is a generic type which was initially populated." % atomtype )
+                return False
+
             # Delete the atomtype.
             proposed_atomtypes.remove([atomtype, typename])
             # Try to type all molecules.
