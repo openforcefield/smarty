@@ -11,7 +11,9 @@ Example illustrating a scheme to create and destroy atom types automatically usi
 
 AUTHORS
 
-John Chodera <jchodera@berkeley.edu>, University of California, Berkeley
+John Chodera <john.chodera@choderalab.org>, Memorial Sloan Kettering Cancer Center.
+Additional contributions from the Mobley lab, UC Irvine, including David Mobley
+and Caitlin Bannan.
 
 The AtomTyper class is based on 'patty' by Pat Walters, Vertex Pharmaceuticals.
 
