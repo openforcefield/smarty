@@ -469,7 +469,7 @@ class AtomTypeSampler(object):
     def save_type_statistics(self, typelist, atom_typecounts, molecule_typecounts, atomtype_matches=None):
         """
         Save "atom type" matches to be output to trajectory
-        This isn't the most elegant solution, but it will make an output file we can read back in 
+        This isn't the most elegant solution, but it will make an output file we can read back in
 
         """
         if atomtype_matches is not None:
@@ -488,16 +488,16 @@ class AtomTypeSampler(object):
                     reference_total = self.reference_atomtypes_atomcount[reference_atomtype]
                     reference_fraction = float(reference_count) / float(reference_total)
                     # Save output
-                    output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, reference_atomtype, atom_typecounts[typename], molecule_typecounts[typename], reference_count, reference_total)) 
+                    output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, reference_atomtype, atom_typecounts[typename], molecule_typecounts[typename], reference_count, reference_total))
                 else:
-                    output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, 'NONE', atom_typecounts[typename], molecule_typecounts[typename], 0, 0)) 
+                    output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, 'NONE', atom_typecounts[typename], molecule_typecounts[typename], 0, 0))
 
             else:
-                output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, 'NONE', atom_typecounts[typename], molecule_typecounts[typename], 0, 0)) 
+                output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, 'NONE', atom_typecounts[typename], molecule_typecounts[typename], 0, 0))
             index += 1
         return output
 
-    def run(self, niterations, trajFile):
+    def run(self, niterations, trajFile=None):
         """
         Run atomtype sampler for the specified number of iterations.
 
@@ -505,6 +505,8 @@ class AtomTypeSampler(object):
         ----------
         niterations : int
             The specified number of iterations
+        trajFile : str, optional, default=None
+            Output trajectory filename
 
         """
         self.traj = []
@@ -530,12 +532,12 @@ class AtomTypeSampler(object):
                 for l in lines:
                     self.traj.append('%i,%s \n' % (iteration, l))
                 print('')
-        
-        # make "trajectory" file
-        if os.path.isfile(trajFile):
-            print "trajectory file already exists, it was overwritten"
-        f = open(trajFile, 'w')
-        start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
-        f.writelines(start + self.traj)
-        f.close()
 
+        if trajFile is not None:
+            # make "trajectory" file
+            if os.path.isfile(trajFile):
+                print "trajectory file already exists, it was overwritten"
+            f = open(trajFile, 'w')
+            start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
+            f.writelines(start + self.traj)
+            f.close()
