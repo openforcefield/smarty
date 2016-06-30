@@ -108,6 +108,15 @@ class AtomTypeSampler(object):
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
+        # Ensure all base types are in initial types (and add if not) as 
+        # base types are generics (such as elemental) and need to be present 
+        # at the start
+        initial_smarts = [ smarts for (smarts, name) in self.initialtypes ]
+        for [smarts, typename] in self.basetypes:
+            if smarts not in initial_smarts:
+                self.initialtypes.append( [ smarts, typename] )
+                if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename) )
+
         # Store initially populated base types, as these will be retained even 
         # if they have zero occupancy (whereas unpopulated base types
         # need never be used ever and can be deleted- i.e. if we have no 
