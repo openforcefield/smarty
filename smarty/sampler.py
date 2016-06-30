@@ -55,7 +55,7 @@ class AtomTypeSampler(object):
     Atom type sampler.
 
     """
-    def __init__(self, molecules, basetypes_filename, decorators_filename, replacements_filename=None, reference_typed_molecules=None, temperature=0.1, verbose=False):
+    def __init__(self, molecules, basetypes_filename, initialtypes_filename, decorators_filename, replacements_filename=None, reference_typed_molecules=None, temperature=0.1, verbose=False):
         """
         Initialize an atom type sampler.
 
@@ -64,7 +64,9 @@ class AtomTypeSampler(object):
         molecules : list of molecules for typing
             List of molecules for typing
         basetypes_filename : str
-            File defining base atom types (which cannot be destroyed)
+            File defining base/generic atom types (which cannot be destroyed); often these are elemental types
+        initialtypes_filename : 
+            File defining initial atom types (which CAN be destroyed, except for those which occur in basetypes_filename
         decorators_filename : str
             File containing decorators that can be added to existing types to generate subtypes
         replacements_filename : str, optional, default=None
@@ -89,16 +91,18 @@ class AtomTypeSampler(object):
         # Define internal typing tag.
         self.typetag = 'atomtype'
 
-        # Read atomtypes and decorators.
-        self.atomtypes = AtomTyper.read_typelist(basetypes_filename)
-        for idx, [smarts, typename] in enumerate(self.atomtypes):
-            self.atomtypes[idx] = [smarts, 'c_'+typename]
+        # Read atomtypes (initial and base) and decorators.
+        self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
+        self.basetypes = AtomTyper.read_typelist(basetypes_filename)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
+        # Try to ensure base/initial types have unique names as name 
+        # clashes between initial and target types will cause problems
+        for idx, [smarts, typename] in enumerate(self.atomtypes):
+            self.atomtypes[idx] = [smarts, 'c_'+typename]
+        for idx, [smarts, typename] in enumerate(self.basetypes):
+            self.basetypes[idx] = [smarts, 'c_'+typename]
 
-        # Store a copy of the basetypes, as these (and only these) are allowed 
-        # to end up with zero occupancy
-        self.basetypes = copy.deepcopy(self.atomtypes)
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
