@@ -114,9 +114,8 @@ class AtomTypeSampler(object):
         initial_smarts = [ smarts for (smarts, name) in self.atomtypes ]
         for [smarts, typename] in self.basetypes:
             if smarts not in initial_smarts:
-                self.atomtypes.append( [ smarts, typename] )
+                self.atomtypes = [[smarts, typename]] + self.atomtypes
                 if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename) )
-
         # Store initially populated base types, as these will be retained even 
         # if they have zero occupancy (whereas unpopulated base types
         # need never be used ever and can be deleted- i.e. if we have no 
@@ -126,7 +125,7 @@ class AtomTypeSampler(object):
         # Store a deep copy of the molecules since they will be annotated
         self.molecules = copy.deepcopy(molecules)
 
-        # Type all molecules with current typelist to ensure that basetypes are sufficient.
+        # Type all molecules with current typelist to ensure that starting types are sufficient.
         self.type_molecules(self.atomtypes, self.molecules)
 
         # Compute atomtype statistics on molecules.
@@ -222,6 +221,7 @@ class AtomTypeSampler(object):
         initial_time = time.time()
         import networkx as nx
         graph = nx.Graph()
+
         # Get current atomtypes and reference atom types
         current_atomtypes = [ typename for (smarts, typename) in atomtypes ]
         reference_atomtypes = [ typename for typename in self.reference_atomtypes ]
