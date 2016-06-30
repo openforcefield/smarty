@@ -177,13 +177,13 @@ class AtomTypeSampler(object):
             # If unused, it matches nothing in the set
             else:  
                 self.atomtypes_with_no_matches.add( smarts )
-                if self.verbose: print("Storing base atom type `%s`, which is unused, so that it will not be tested further." % smarts )   
+                if self.verbose: print("Storing base atom type `%s`, which is unused, so that it will not be proposed further." % smarts )   
         # Track unused initial types that are not base types as we also don't 
         # need to retain those
         for (smarts, atom_type) in self.atomtypes:
-            if atom_typecounts[atom_type] == 0 and (smarts not in basetypes_smarts):
+            if atom_typecounts[atom_type] == 0 and (smarts not in self.basetypes_smarts):
                 self.atomtypes_with_no_matches.add( smarts )
-                if self.verbose: print("Storing initial atom type `%s`, which is unused, so that it will not be tested further." % smarts )   
+                if self.verbose: print("Storing initial atom type `%s`, which is unused, so that it will not be proposed further." % smarts )   
 
 
         return
