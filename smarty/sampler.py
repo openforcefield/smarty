@@ -291,6 +291,12 @@ class AtomTypeSampler(object):
             atomtype_index = random.randint(0, natomtypes-1)
             (atomtype, typename) = proposed_atomtypes[atomtype_index]
             if self.verbose: print("Attempting to destroy atom type %s : %s..." % (atomtype, typename))
+            # Reject deletion of (populated) base types as we want to retain 
+            # generics even if empty
+            if [atomtype, typename] in self.used_basetypes: 
+                if self.verbose: print("Destruction rejected for atom type %s because this is a generic type which was initially populated." % atomtype )
+                return False
+
             # Delete the atomtype.
             proposed_atomtypes.remove([atomtype, typename])
             # Try to type all molecules.
