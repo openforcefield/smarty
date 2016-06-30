@@ -131,8 +131,10 @@ class AtomTypeSampler(object):
         # Compute atomtype statistics on molecules.
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
         if self.verbose: self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
-        # For use later, also see which base types are used (get those stats)
-        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, self.molecules )
+        # For use later, also see which base types are used (get those stats) - which means I need to type a copy of molecules then recompute stats
+        tmpmolecules = copy.deepcopy(molecules)
+        self.type_molecules(self.basetypes, tmpmolecules)
+        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, tmpmolecules )
 
 
         # Compute total atoms
