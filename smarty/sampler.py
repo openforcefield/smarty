@@ -108,12 +108,6 @@ class AtomTypeSampler(object):
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
-        # Creat dictionary to store children of initial atom types
-        self.parents = dict()
-        for [smarts, name] in self.atomtypes:
-            #store empty list of chlidren for each atomtype
-            self.parents[smarts] = [] 
-
         # Ensure all base types are in initial types (and add if not) as 
         # base types are generics (such as elemental) and need to be present 
         # at the start
@@ -127,6 +121,12 @@ class AtomTypeSampler(object):
         # need never be used ever and can be deleted- i.e. if we have no 
         # phosphorous in the set we don't need a phosphorous base type)
         self.used_basetypes = []
+
+        # Creat dictionary to store children of initial atom types
+        self.parents = dict()
+        for [smarts, typename] in self.atomtypes:
+            #store empty list of chlidren for each atomtype
+            self.parents[smarts] = [] 
 
         # Store a deep copy of the molecules since they will be annotated
         self.molecules = copy.deepcopy(molecules)
@@ -571,6 +571,13 @@ class AtomTypeSampler(object):
             index += 1
         return output
 
+    def print_parent_tree(self):
+        """
+        Prints the hierarchy of atomtypes stored in self.parents
+        """
+        # This will need to be modified, but I want to see it printing something while testing
+        print(self.parents)
+
     def run(self, niterations, trajFile=None):
         """
         Run atomtype sampler for the specified number of iterations.
@@ -620,6 +627,8 @@ class AtomTypeSampler(object):
             start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
             f.writelines(start + self.traj)
             f.close()
+
+        if self.verbose: self.print_parent_tree()
 
         #Compute final type stats
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
