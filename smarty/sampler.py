@@ -568,6 +568,7 @@ class AtomTypeSampler(object):
 
         """
         self.traj = []
+        fraction_matched_atoms = 0.
         for iteration in range(niterations):
             if self.verbose:
                 print("Iteration %d / %d" % (iteration, niterations))
@@ -600,4 +601,6 @@ class AtomTypeSampler(object):
             f.writelines(start + self.traj)
             f.close()
 
+        #Compute final type stats
+        [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
         return fraction_matched_atoms
