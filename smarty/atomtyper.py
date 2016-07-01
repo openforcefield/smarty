@@ -165,6 +165,7 @@ class AtomTyper(object):
         typelist = list()
         ifs = open(filename)
         lines = ifs.readlines()
+        used_typenames = list()
         for line in lines:
             # Strip trailing comments
             index = line.find('%')
@@ -176,7 +177,12 @@ class AtomTyper(object):
             if len(tokens) >= 2:
                 smarts = tokens[0]
                 typename = ' '.join(tokens[1:])
-                typelist.append([smarts,typename])
+                if typename not in used_typenames:
+                    typelist.append([smarts,typename])
+                    used_typenames.append(typename)
+                else:
+                    raise Exception("Error in file '%s' -- each entry must "
+                         "have a unique name." % filename )
         ifs.close()
 
         return typelist

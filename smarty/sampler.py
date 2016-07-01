@@ -11,7 +11,9 @@ Example illustrating a scheme to create and destroy atom types automatically usi
 
 AUTHORS
 
-John Chodera <jchodera@berkeley.edu>, University of California, Berkeley
+John Chodera <john.chodera@choderalab.org>, Memorial Sloan Kettering Cancer Center.
+Additional contributions from the Mobley lab, UC Irvine, including David Mobley
+and Caitlin Bannan.
 
 The AtomTyper class is based on 'patty' by Pat Walters, Vertex Pharmaceuticals.
 
@@ -55,7 +57,7 @@ class AtomTypeSampler(object):
     Atom type sampler.
 
     """
-    def __init__(self, molecules, basetypes_filename, decorators_filename, replacements_filename=None, reference_typed_molecules=None, temperature=0.1, verbose=False):
+    def __init__(self, molecules, basetypes_filename, initialtypes_filename, decorators_filename, replacements_filename=None, reference_typed_molecules=None, temperature=0.1, verbose=False):
         """
         Initialize an atom type sampler.
 
@@ -64,7 +66,9 @@ class AtomTypeSampler(object):
         molecules : list of molecules for typing
             List of molecules for typing
         basetypes_filename : str
-            File defining base atom types (which cannot be destroyed)
+            File defining base/generic atom types (which cannot be destroyed); often these are elemental types
+        initialtypes_filename : 
+            File defining initial atom types (which CAN be destroyed, except for those which occur in basetypes_filename
         decorators_filename : str
             File containing decorators that can be added to existing types to generate subtypes
         replacements_filename : str, optional, default=None
@@ -89,19 +93,29 @@ class AtomTypeSampler(object):
         # Define internal typing tag.
         self.typetag = 'atomtype'
 
-        # Read atomtypes and decorators.
-        self.atomtypes = AtomTyper.read_typelist(basetypes_filename)
-        for idx, [smarts, typename] in enumerate(self.atomtypes):
-            self.atomtypes[idx] = [smarts, 'c_'+typename]
+        # Read atomtypes (initial and base) and decorators.
+        self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
+        self.basetypes = AtomTyper.read_typelist(basetypes_filename)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
+        # Try to ensure base/initial types have unique names as name 
+        # clashes between initial and target types will cause problems
+        for idx, [smarts, typename] in enumerate(self.atomtypes):
+            self.atomtypes[idx] = [smarts, 'c_'+typename]
+        for idx, [smarts, typename] in enumerate(self.basetypes):
+            self.basetypes[idx] = [smarts, 'c_'+typename]
 
-        # Store a copy of the basetypes, as these (and only these) are allowed 
-        # to end up with zero occupancy
-        self.basetypes = copy.deepcopy(self.atomtypes)
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
+        # Ensure all base types are in initial types (and add if not) as 
+        # base types are generics (such as elemental) and need to be present 
+        # at the start
+        initial_smarts = [ smarts for (smarts, name) in self.atomtypes ]
+        for [smarts, typename] in self.basetypes:
+            if smarts not in initial_smarts:
+                self.atomtypes = [[smarts, typename]] + self.atomtypes
+                if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename) )
         # Store initially populated base types, as these will be retained even 
         # if they have zero occupancy (whereas unpopulated base types
         # need never be used ever and can be deleted- i.e. if we have no 
@@ -111,12 +125,17 @@ class AtomTypeSampler(object):
         # Store a deep copy of the molecules since they will be annotated
         self.molecules = copy.deepcopy(molecules)
 
-        # Type all molecules with current typelist to ensure that basetypes are sufficient.
+        # Type all molecules with current typelist to ensure that starting types are sufficient.
         self.type_molecules(self.atomtypes, self.molecules)
 
         # Compute atomtype statistics on molecules.
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
         if self.verbose: self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
+        # For use later, also see which base types are used (get those stats) - which means I need to type a copy of molecules then recompute stats
+        tmpmolecules = copy.deepcopy(molecules)
+        self.type_molecules(self.basetypes, tmpmolecules)
+        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, tmpmolecules )
+
 
         # Compute total atoms
         self.total_atoms = 0.0
@@ -150,16 +169,23 @@ class AtomTypeSampler(object):
         # This is used for efficiency.
         self.atomtypes_with_no_matches = set()
         
-        # Track used vs unused base types
+        # Track used vs unused base types - unused base types are not retained
         for (smarts, atom_type) in self.basetypes:
             # If this type is used, then track it
-            if atom_typecounts[atom_type] > 0:
+            if basetype_typecounts[atom_type] > 0:
                 self.used_basetypes.append( [ smarts, atom_type] )
                 if self.verbose: print("Storing used base type `%s`, name `%s` with count %s..." % (smarts, atom_type, atom_typecounts[atom_type] )) 
             # If unused, it matches nothing in the set
             else:  
                 self.atomtypes_with_no_matches.add( smarts )
-                if self.verbose: print("Storing atom type `%s`, which is unused, so that it will not be tested further." % smarts )   
+                if self.verbose: print("Storing base atom type `%s`, which is unused, so that it will not be proposed further." % smarts )   
+        # Track unused initial types that are not base types as we also don't 
+        # need to retain those
+        for (smarts, atom_type) in self.atomtypes:
+            if atom_typecounts[atom_type] == 0 and (smarts not in self.basetypes_smarts):
+                self.atomtypes_with_no_matches.add( smarts )
+                if self.verbose: print("Storing initial atom type `%s`, which is unused, so that it will not be proposed further." % smarts )   
+
 
         return
 
@@ -197,6 +223,7 @@ class AtomTypeSampler(object):
         initial_time = time.time()
         import networkx as nx
         graph = nx.Graph()
+
         # Get current atomtypes and reference atom types
         current_atomtypes = [ typename for (smarts, typename) in atomtypes ]
         reference_atomtypes = [ typename for typename in self.reference_atomtypes ]
@@ -259,6 +286,8 @@ class AtomTypeSampler(object):
         atom_type_matches : list of (current_atomtype, reference_atomtype, counts)
             List of atom type matches.
 
+        Returns fraction_matched_atoms, the fractional count of matched atoms
+
         """
         print('Atom type matches:')
         total_atom_type_matches = 0
@@ -272,6 +301,7 @@ class AtomTypeSampler(object):
         fraction_matched_atoms = float(total_atom_type_matches) / float(self.total_atoms)
         print('%d / %d total atoms match (%.3f %%)' % (total_atom_type_matches, self.total_atoms, fraction_matched_atoms * 100))
 
+        return fraction_matched_atoms
 
     def sample_atomtypes(self):
         """
@@ -421,7 +451,7 @@ class AtomTypeSampler(object):
         molecules
 
         RETURNS
-
+#
         atom_typecounts (dict) - counts of number of atoms containing each atomtype
         molecule_typecounds (dict) - counts of number of molecules containing each atom type
 
@@ -531,6 +561,11 @@ class AtomTypeSampler(object):
         trajFile : str, optional, default=None
             Output trajectory filename
 
+        Returns
+        ----------
+        fraction_matched_atoms : float
+            fraction of total atoms matched successfully at end of run
+
         """
         self.traj = []
         for iteration in range(niterations):
@@ -564,3 +599,8 @@ class AtomTypeSampler(object):
             start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
             f.writelines(start + self.traj)
             f.close()
+
+        #Compute final type stats
+        [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
+        fraction_matched_atoms = self.show_type_matches(self.atom_type_matches)
+        return fraction_matched_atoms
