@@ -23,7 +23,7 @@ class TestAtomTypeSampler(TestCase):
         # Test to make sure that AlkEthOH gets 100% at T=0 starting from correct
         # types
         basetypes_filename = get_data_filename('atomtypes/basetypes.smarts')
-        initialtypes_filename = get_data_filename('atomtypes/initial_alkEthOH.smarts')
+        initialtypes_filename = get_data_filename('atomtypes/initial_AlkEthOH.smarts')
         decorators_filename = get_data_filename('atomtypes/decorators.smarts')
         replacements_filename = get_data_filename('atomtypes/replacements.smarts')
         molecules = smarty.utils.read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_tripos.mol2'), verbose=False)
