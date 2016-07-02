@@ -122,6 +122,12 @@ class AtomTypeSampler(object):
         # phosphorous in the set we don't need a phosphorous base type)
         self.used_basetypes = []
 
+        # Creat dictionary to store children of initial atom types
+        self.parents = dict()
+        for [smarts, typename] in self.atomtypes:
+            #store empty list of chlidren for each atomtype
+            self.parents[smarts] = [] 
+
         # Store a deep copy of the molecules since they will be annotated
         self.molecules = copy.deepcopy(molecules)
 
@@ -311,6 +317,7 @@ class AtomTypeSampler(object):
         # Copy current atomtypes for proposal.
         proposed_atomtypes = copy.deepcopy(self.atomtypes)
         proposed_molecules = copy.deepcopy(self.molecules)
+        proposed_parents = copy.deepcopy(self.parents)
         natomtypes = len(proposed_atomtypes)
         ndecorators = len(self.decorators)
 
@@ -329,6 +336,15 @@ class AtomTypeSampler(object):
 
             # Delete the atomtype.
             proposed_atomtypes.remove([atomtype, typename])
+
+            # update proposed parent dictionary
+            for parent, children in proposed_parents.items():
+                if atomtype in children:
+                    children += proposed_parents[atomtype]
+                    children.remove(atomtype)
+
+            del proposed_parents[atomtype]
+
             # Try to type all molecules.
             try:
                 self.type_molecules(proposed_atomtypes, proposed_molecules)
@@ -349,6 +365,10 @@ class AtomTypeSampler(object):
             proposed_atomtype = '[' + result.groups(1)[0] + '&' + decorator + ']'
             proposed_typename = atomtype_typename + ' ' + decorator_typename
             if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atomtype, atomtype_typename, decorator, decorator_typename, proposed_atomtype, proposed_typename))
+
+            # Update proposed parent dictionary
+            proposed_parents[atomtype].append(proposed_atomtype)
+            proposed_parents[proposed_atomtype] = []
 
             # Check that we haven't already determined this atom type isn't matched in the dataset.
             if proposed_atomtype in self.atomtypes_with_no_matches:
@@ -421,6 +441,7 @@ class AtomTypeSampler(object):
         if accept:
             self.atomtypes = proposed_atomtypes
             self.molecules = proposed_molecules
+            self.parents = proposed_parents
             self.atom_type_matches = proposed_atom_type_matches
             self.total_atom_type_matches = proposed_total_atom_type_matches
             return True
@@ -550,6 +571,20 @@ class AtomTypeSampler(object):
             index += 1
         return output
 
+    def print_parent_tree(self, roots, start=''):
+        """
+        Recursively prints the parent tree. 
+
+        Parameters
+        ----------
+        roots = list of smarts strings to print
+        """
+        for r in roots:
+            print("%s%s" % (start, r))
+            if r in self.parents.keys():
+                self.print_parent_tree(self.parents[r], start+'\t')
+
+
     def run(self, niterations, trajFile=None):
         """
         Run atomtype sampler for the specified number of iterations.
@@ -603,4 +638,16 @@ class AtomTypeSampler(object):
         #Compute final type stats
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
         fraction_matched_atoms = self.show_type_matches(self.atom_type_matches)
+
+        # If verbose print parent tree:
+        if self.verbose: 
+            roots = self.parents.keys()
+            # Remove keys from roots if they are children
+            for parent, children in self.parents.items():
+                for child in children:
+                    if child in roots:
+                        roots.remove(child)
+
+            print("Atom type hierarchy:")
+            self.print_parent_tree(roots, '\t')
         return fraction_matched_atoms
