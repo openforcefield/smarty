@@ -571,12 +571,19 @@ class AtomTypeSampler(object):
             index += 1
         return output
 
-    def print_parent_tree(self):
+    def print_parent_tree(self, roots, start=''):
         """
-        Prints the hierarchy of atomtypes stored in self.parents
+        Recursively prints the parent tree. 
+
+        Parameters
+        ----------
+        roots = list of smarts strings to print
         """
-        # This will need to be modified, but I want to see it printing something while testing
-        print(self.parents)
+        for r in roots:
+            print("%s%s" % (start, r))
+            if r in self.parents.keys():
+                self.print_parent_tree(self.parents[r], start+'\t')
+
 
     def run(self, niterations, trajFile=None):
         """
@@ -628,9 +635,19 @@ class AtomTypeSampler(object):
             f.writelines(start + self.traj)
             f.close()
 
-        if self.verbose: self.print_parent_tree()
-
         #Compute final type stats
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
         fraction_matched_atoms = self.show_type_matches(self.atom_type_matches)
+
+        # If verbose print parent tree:
+        if self.verbose: 
+            roots = self.parents.keys()
+            # Remove keys from roots if they are children
+            for parent, children in self.parents.items():
+                for child in children:
+                    if child in roots:
+                        roots.remove(child)
+
+            print("Atom type hierarchy:")
+            self.print_parent_tree(roots, '\t')
         return fraction_matched_atoms
