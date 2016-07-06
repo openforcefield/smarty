@@ -14,7 +14,7 @@ class TestAtomTypeSampler(TestCase):
         reference_typed_molecules = smarty.utils.read_molecules(get_data_filename('molecules/zinc-subset-parm@frosst.mol2.gz'), verbose=False)
 
         # Construct atom type sampler.
-        atomtype_sampler = smarty.AtomTypeSampler(molecules, basetypes_filename, initialtypes_filename, decorators_filename, replacements_filename=replacements_filename, reference_typed_molecules=reference_typed_molecules, verbose=False)
+        atomtype_sampler = smarty.AtomTypeSampler(molecules, basetypes_filename, initialtypes_filename, decorators_filename, replacements_filename=replacements_filename, reference_typed_molecules=reference_typed_molecules, verbose=False, decorator_behavior='simple-decorators')
 
         # Start sampling atom types.
         atomtype_sampler.run(2)
@@ -24,7 +24,7 @@ class TestAtomTypeSampler(TestCase):
         # types
         basetypes_filename = get_data_filename('atomtypes/basetypes.smarts')
         initialtypes_filename = get_data_filename('atomtypes/initial_AlkEthOH.smarts')
-        decorators_filename = get_data_filename('atomtypes/decorators.smarts')
+        decorators_filename = get_data_filename('atomtypes/decorators-combinatorial.smarts')
         replacements_filename = get_data_filename('atomtypes/replacements.smarts')
         molecules = smarty.utils.read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_tripos.mol2'), verbose=False)
         reference_typed_molecules = smarty.utils.read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_ff.mol2'), verbose=False)
