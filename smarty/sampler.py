@@ -272,9 +272,9 @@ class AtomTypeSampler(object):
                 atoms_in_common[(current_atomtype,reference_atomtype)] += 1
         for current_atomtype in current_atomtypes:
             for reference_atomtype in reference_atomtypes:
-                print "CURRENT AND REFERENCE ATOMTYPE: " + str(current_atomtype) + " " + str(reference_atomtype)
+                #print "CURRENT AND REFERENCE ATOMTYPE: " + str(current_atomtype) + " " + str(reference_atomtype)
                 weight = atoms_in_common[(current_atomtype,reference_atomtype)]
-                print weight
+                #print weight
                 graph.add_edge(current_atomtype, reference_atomtype, weight=weight)
         elapsed_time = time.time() - initial_time
         if self.verbose: print('Graph creation took %.3f s' % elapsed_time)
@@ -357,10 +357,6 @@ class AtomTypeSampler(object):
                 return False
 
             # Delete the atomtype.
-            #if atomtype in self.basetypes_smarts:
-                #print "enter the exception - to remove from our basetypes"
-                #print atomtype
-                #proposed_basetypes.remove([atomtype, typename])
             proposed_atomtypes.remove([atomtype, typename])
 
             # update proposed parent dictionary
@@ -410,10 +406,10 @@ class AtomTypeSampler(object):
                     print "ONE DECORATOR"
                     if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
                         # There is a bond - two atom types
-                        new_dec = decorator.replace("z", basetype)
+                        result = re.match('\[(.+)\]', basetype)
                         basetype_index = random.randint(0, natombasetypes-1)
-                        (basetype2, basetype_typename2) = self.atom_basetype[basetype_index]
-                        result = re.match('\[(.+)\]', basetype2)
+                        (basetype, basetype_typename2) = self.atom_basetype[basetype_index]
+                        new_dec = decorator.replace("z", basetype)
                         proposed_atomtype = '[' + result.groups(1)[0] + new_dec + ']'
                         proposed_typename = basetype_typename2 + ' ' + basetype_typename +  ' ' + decorator_typename
                     else:
@@ -461,7 +457,6 @@ class AtomTypeSampler(object):
                         decorator_index = random.randint(0, ndecorators-1)
                         (decorator, decorator_typename) = self.decorators[decorator_index]
                         while decorator in proposed_atomtype: # Check if you already have that decorator to the base atom
-                            print "This decorator already exists " + str(decorator)
                             decorator_index = random.randint(0, ndecorators-1)
                             (decorator, decorator_typename) = self.decorators[decorator_index]
                         if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
@@ -487,7 +482,6 @@ class AtomTypeSampler(object):
                             new_dec = decorator
                             proposed_atomtype += new_dec
                             proposed_typename += decorator_typename + ' '
-                        print proposed_atomtype
                         idx += 1
                     proposed_atomtype = '[' + proposed_atomtype + ']'
 
@@ -572,10 +566,9 @@ class AtomTypeSampler(object):
             self.atomtypes = proposed_atomtypes
             self.molecules = proposed_molecules
             self.parents = proposed_parents
+            print "------------ self.parents= " + str(self.parents)
             self.atom_type_matches = proposed_atom_type_matches
             self.total_atom_type_matches = proposed_total_atom_type_matches
-            #self.atom_basetype = proposed_basetypes
-            #print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% " + str(self.atom_basetype)
             return True
         else:
             return False
