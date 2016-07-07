@@ -361,9 +361,9 @@ class AtomTypeSampler(object):
 
             # update proposed parent dictionary
             for parent, children in proposed_parents.items():
-                if atomtype in children:
+                if atomtype in [at for [at, tn] in children]:
                     children += proposed_parents[atomtype]
-                    children.remove(atomtype)
+                    children.remove([atomtype, typename])
 
             del proposed_parents[atomtype]
 
@@ -389,7 +389,7 @@ class AtomTypeSampler(object):
                 if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atomtype, atomtype_typename, decorator, decorator_typename, proposed_atomtype, proposed_typename))
             
                 # Update proposed parent dictionary
-                proposed_parents[atomtype].append(proposed_atomtype)
+                proposed_parents[atomtype].append([proposed_atomtype, proposed_typename])
 
             else:
                 # combinatorial-decorators
@@ -488,7 +488,7 @@ class AtomTypeSampler(object):
                 if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
 
                 # Update proposed parent dictionary
-                proposed_parents[original_basetype].append(proposed_atomtype)
+                proposed_parents[original_basetype].append([proposed_atomtype, proposed_typename])
                 print "proposed_parents: " + str(proposed_parents)
 
             proposed_parents[proposed_atomtype] = []
@@ -707,7 +707,8 @@ class AtomTypeSampler(object):
         for r in roots:
             print("%s%s" % (start, r))
             if r in self.parents.keys():
-                self.print_parent_tree(self.parents[r], start+'\t')
+                new_roots = [smart for [smart, name] in self.parents[r]]
+                self.print_parent_tree(new_roots, start+'\t')
 
 
     def run(self, niterations, trajFile=None):
@@ -769,7 +770,8 @@ class AtomTypeSampler(object):
             roots = self.parents.keys()
             # Remove keys from roots if they are children
             for parent, children in self.parents.items():
-                for child in children:
+                child_smarts = [smarts for [smarts, name] in children]
+                for child in child_smarts:
                     if child in roots:
                         roots.remove(child)
 
