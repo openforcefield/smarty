@@ -97,6 +97,7 @@ class AtomTypeSampler(object):
 
         # Read atomtypes (initial and base) and decorators.
         self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
+        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
         self.basetypes = AtomTyper.read_typelist(basetypes_filename)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
@@ -117,7 +118,8 @@ class AtomTypeSampler(object):
         
         # Store a copy of the basetypes, as these (and only these) are allowed
         # to end up with zero occupancy
-        self.basetypes = copy.deepcopy(self.atomtypes)
+        # commenting out this line, basetypes are now a separate file and are parsed above
+        # self.basetypes = copy.deepcopy(self.atomtypes)
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
@@ -696,15 +698,44 @@ class AtomTypeSampler(object):
             index += 1
         return output
 
-    def removeCompletedElements(self, atom_typecounts, molecule_typecounts):
+    def get_unfinishedAtomList(self, atom_typecounts, molecule_typecounts, atomtype_matches = None):
         """
         This method prunes the set of current atomtypes so that if all branches 
         of a base type have been found it no longer tries extending any atom of that base type.  
         """
-        allow = []
+        # Reset unmatched atom types incase something was destroyed
+        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
 
-        for [base_smart, base_typename] in self.basetypes:
-            useBaseType = True
+        # If we don't have reference matches, unmatched_atomtypes should be all current atomtypes 
+        if atomtype_matches is None:
+            return
+        else: # store counts for each atom type
+            reference_counts = dict()
+            for (typename, reference_atomtype, count) in atomtype_matches:
+                if reference_atomtype is None:
+                    reference_counts[typename] = 0
+                else:
+                    reference_counts[typename] = count
+
+        # If all of a basetype and it's children match found atoms and reference remove from list
+        for [base_smarts, base_typename] in self.basetypes:
+            includeBase = True
+            
+            # If the number of atoms matches the references are the same for basetypes and their children
+            # then we have found all reference types for that element and should stop searching that branch
+            if atom_typecounts[base_smarts] == reference_counts[base_smarts]:
+                includeBase = False
+                for [child_smarts, child_name] in self.parents[base_smarts]:
+                    # If any of the children's atom count and reference count don't agree then these should stay in the unmatched_atomtypes
+                    if not atom_typecounts[child_smarts] == reference_counts[child_smarts]:
+                        includeBase = True
+                        break
+
+            # Remove atomtypes from completed element branches
+            if not includeBase:
+                self.unmatched_atomtypes.remove([base_smarts, base_typename])
+                for child in self.parents[base_smarts]:
+                    self.unmatched_atomtypes.remove(child)
 
         return
 
