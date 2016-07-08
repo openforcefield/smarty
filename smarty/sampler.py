@@ -778,6 +778,7 @@ class AtomTypeSampler(object):
 
             accepted = self.sample_atomtypes()
             [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
+            get_unfinishedAtomList(atom_typecounts, molecule_typecounts, atomtype_matches = self.atom_type_matches)
 
             if trajFile is not None:
                 # Get data as list of csv strings
