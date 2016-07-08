@@ -696,6 +696,18 @@ class AtomTypeSampler(object):
             index += 1
         return output
 
+    def removeCompletedElements(self, atom_typecounts, molecule_typecounts):
+        """
+        This method prunes the set of current atomtypes so that if all branches 
+        of a base type have been found it no longer tries extending any atom of that base type.  
+        """
+        allow = []
+
+        for [base_smart, base_typename] in self.basetypes:
+            useBaseType = True
+
+        return
+
     def print_parent_tree(self, roots, start=''):
         """
         Recursively prints the parent tree. 
@@ -734,6 +746,14 @@ class AtomTypeSampler(object):
                 print("Iteration %d / %d" % (iteration, niterations))
 
             accepted = self.sample_atomtypes()
+            [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
+
+            if trajFile is not None:
+                # Get data as list of csv strings
+                lines = self.save_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
+                # Add lines to trajectory with iteration number:
+                for l in lines:
+                    self.traj.append('%i,%s \n' % (iteration, l))
 
             if self.verbose:
                 if accepted:
@@ -742,20 +762,13 @@ class AtomTypeSampler(object):
                     print('Rejected.')
 
                 # Compute atomtype statistics on molecules.
-                [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
                 self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
-
-                # Get data as list of csv strings
-                lines = self.save_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
-                # Add lines to trajectory with iteration number:
-                for l in lines:
-                    self.traj.append('%i,%s \n' % (iteration, l))
                 print('')
 
         if trajFile is not None:
             # make "trajectory" file
             if os.path.isfile(trajFile):
-                print "trajectory file already exists, it was overwritten"
+                print("trajectory file already exists, it was overwritten")
             f = open(trajFile, 'w')
             start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
             f.writelines(start + self.traj)
