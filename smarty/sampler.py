@@ -723,11 +723,11 @@ class AtomTypeSampler(object):
             
             # If the number of atoms matches the references are the same for basetypes and their children
             # then we have found all reference types for that element and should stop searching that branch
-            if atom_typecounts[base_smarts] == reference_counts[base_smarts]:
+            if atom_typecounts[base_typename] == reference_counts[base_typename]:
                 includeBase = False
                 for [child_smarts, child_name] in self.parents[base_smarts]:
                     # If any of the children's atom count and reference count don't agree then these should stay in the unmatched_atomtypes
-                    if not atom_typecounts[child_smarts] == reference_counts[child_smarts]:
+                    if not atom_typecounts[child_name] == reference_counts[child_name]:
                         includeBase = True
                         break
 
@@ -778,7 +778,7 @@ class AtomTypeSampler(object):
 
             accepted = self.sample_atomtypes()
             [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
-            get_unfinishedAtomList(atom_typecounts, molecule_typecounts, atomtype_matches = self.atom_type_matches)
+            self.get_unfinishedAtomList(atom_typecounts, molecule_typecounts, atomtype_matches = self.atom_type_matches)
 
             if trajFile is not None:
                 # Get data as list of csv strings
