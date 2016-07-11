@@ -97,6 +97,7 @@ class AtomTypeSampler(object):
 
         # Read atomtypes (initial and base) and decorators.
         self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
+        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
         self.basetypes = AtomTyper.read_typelist(basetypes_filename)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
@@ -117,7 +118,8 @@ class AtomTypeSampler(object):
         
         # Store a copy of the basetypes, as these (and only these) are allowed
         # to end up with zero occupancy
-        self.basetypes = copy.deepcopy(self.atomtypes)
+        # commenting out this line, basetypes are now a separate file and are parsed above
+        # self.basetypes = copy.deepcopy(self.atomtypes)
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
@@ -458,9 +460,9 @@ class AtomTypeSampler(object):
 
             # update proposed parent dictionary
             for parent, children in proposed_parents.items():
-                if atomtype in children:
+                if atomtype in [at for [at, tn] in children]:
                     children += proposed_parents[atomtype]
-                    children.remove(atomtype)
+                    children.remove([atomtype, typename])
 
             del proposed_parents[atomtype]
 
@@ -486,7 +488,7 @@ class AtomTypeSampler(object):
                 if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atomtype, atomtype_typename, decorator, decorator_typename, proposed_atomtype, proposed_typename))
             
                 # Update proposed parent dictionary
-                proposed_parents[atomtype].append(proposed_atomtype)
+                proposed_parents[atomtype].append([proposed_atomtype, proposed_typename])
 
             else:
                 # combinatorial-decorators
@@ -518,110 +520,13 @@ class AtomTypeSampler(object):
                         atom2type = self.PickAnAtom(natomtypes)
                         (proposed_atomtype, proposed_typename) = self.AddAlphaSubstituentAtom(atom1type, bondset[bondset_index], atom2type)
                         if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
-                
 
-                # Takes a desired current set of atomtypes (current, base, populated base, or some combination
-                # of the above or something else) and pick one at random
-                #atom1type_index = random.randint(0, natomtypes-1)
-                #(atom1type, atom1type_typename) = self.atomtypes[atom1type_index]
+                if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
 
-                #number_decorators = random.randint(1,3)
-                #print "number of decorator= " + str(number_decorators)
-                # Pick a decorator and a basetype
-                #decorator_index = random.randint(0, ndecorators-1)
-                #(decorator, decorator_typename) = self.decorators[decorator_index]
-                #basetype_index = random.randint(0, natombasetypes-1)
-                #(basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                #original_basetype = basetype
-                #if number_decorators == 1:
-                #    # One or Two atom type and one decorator
-                #    print "ONE DECORATOR"
-                #    if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                #        # There is a bond - two atom types
-                #        result = re.match('\[(.+)\]', basetype)
-                #        basetype_index = random.randint(0, natombasetypes-1)
-                #        (basetype, basetype_typename2) = self.atom_basetype[basetype_index]
-                #        new_dec = decorator.replace("z", basetype)
-                #        proposed_atomtype = '[' + result.groups(1)[0] + new_dec + ']'
-                #        proposed_typename = basetype_typename2 + ' ' + basetype_typename +  ' ' + decorator_typename
-                #    else:
-                #        # Only one atom type
-                #        result = re.match('\[(.+)\]', basetype)
-                #        proposed_atomtype = '[' + result.groups(1)[0] + decorator + ']'
-                #        proposed_typename = basetype_typename + ' ' + decorator_typename
-                #elif number_decorators == 2:
-                #    print "TWO DECORATORS"
-                #    # Two atom types and two decorator
-                #    idx = 0
-                #    proposed_typename = ''
-                #    proposed_atomtype = ''
-                #    result = re.match('\[(.+)\]', basetype)
-                #    proposed_atomtype += result.groups(1)[0]
-                #    proposed_typename += basetype_typename + ' '
-                #    while idx < 2:
-                #        decorator_index = random.randint(0, ndecorators-1)
-                #        (decorator, decorator_typename) = self.decorators[decorator_index]
-                #        print decorator
-                #        if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                #            basetype_index = random.randint(0, natombasetypes-1)
-                #            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                #            new_dec = decorator.replace("z", basetype)
-                #            proposed_typename += basetype_typename + ' ' + decorator_typename + ' '
-                #        else:
-                #            new_dec = decorator
-                #            proposed_typename += decorator_typename + ' '
-                #        proposed_atomtype += new_dec
-                #        print proposed_atomtype
-                #        idx += 1
-                #    proposed_atomtype = '[' + proposed_atomtype + ']'
-                #else:
-                #    print "THREE DECORATORS"
-                #    # Two atom types and three decorator
-                #    idx = 0
-                #    proposed_typename = ''
-                #    proposed_atomtype = ''
-                #    n_basetype = 1
-                #    decorator_bonds = 0
-                #    result = re.match('\[(.+)\]', basetype)
-                #    proposed_atomtype += result.groups(1)[0]
-                #    proposed_typename += basetype_typename + ' '
-                #    while idx < 3:
-                #        decorator_index = random.randint(0, ndecorators-1)
-                #        (decorator, decorator_typename) = self.decorators[decorator_index]
-                #        while decorator in proposed_atomtype: # Check if you already have that decorator to the base atom
-                #            decorator_index = random.randint(0, ndecorators-1)
-                #            (decorator, decorator_typename) = self.decorators[decorator_index]
-                #        if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                #            basetype_index = random.randint(0, natombasetypes-1)
-                #            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                #            new_dec = decorator.replace("z", basetype)
-                #            n_basetype += 1
-                #            decorator_bonds += 1
-                #            if decorator_bonds > 1:
-                #                # Can either decorate the main atom type or another atom bonded to the main atom type
-                #                if random.random() < 0.5:
-                #                    # Add decorator to another decorator
-                #                    new_dec = new_dec + ')'
-                #                    new_dec = re.sub('\)', new_dec, proposed_atomtype) # Sub parentheses to the new decorator
-                #                    print "*** Proposed atom type after add a decorator to another decorator: " + str(new_dec)
-                #                    proposed_atomtype = new_dec
-                #                else:
-                #                    proposed_atomtype += new_dec
-                #            else:
-                #                proposed_atomtype += new_dec
-                #            proposed_typename += basetype_typename + ' ' + decorator_typename + ' '
-                #        else:
-                #            new_dec = decorator
-                #            proposed_atomtype += new_dec
-                #            proposed_typename += decorator_typename + ' '
-                #        idx += 1
-                #    proposed_atomtype = '[' + proposed_atomtype + ']'
+                # Update proposed parent dictionary
+                proposed_parents[original_basetype].append([proposed_atomtype, proposed_typename])
+                print "proposed_parents: " + str(proposed_parents)
 
-                #if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
-
-                ## Update proposed parent dictionary
-                #proposed_parents[original_basetype].append(proposed_atomtype)
-                #print "proposed_parents: " + str(proposed_parents)
 
             proposed_parents[proposed_atomtype] = []
 
@@ -828,6 +733,47 @@ class AtomTypeSampler(object):
             index += 1
         return output
 
+    def get_unfinishedAtomList(self, atom_typecounts, molecule_typecounts, atomtype_matches = None):
+        """
+        This method prunes the set of current atomtypes so that if all branches 
+        of a base type have been found it no longer tries extending any atom of that base type.  
+        """
+        # Reset unmatched atom types incase something was destroyed
+        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
+
+        # If we don't have reference matches, unmatched_atomtypes should be all current atomtypes 
+        if atomtype_matches is None:
+            return
+        else: # store counts for each atom type
+            reference_counts = dict()
+            for (typename, reference_atomtype, count) in atomtype_matches:
+                if reference_atomtype is None:
+                    reference_counts[typename] = 0
+                else:
+                    reference_counts[typename] = count
+
+        # If all of a basetype and it's children match found atoms and reference remove from list
+        for [base_smarts, base_typename] in self.basetypes:
+            includeBase = True
+            
+            # If the number of atoms matches the references are the same for basetypes and their children
+            # then we have found all reference types for that element and should stop searching that branch
+            if atom_typecounts[base_typename] == reference_counts[base_typename]:
+                includeBase = False
+                for [child_smarts, child_name] in self.parents[base_smarts]:
+                    # If any of the children's atom count and reference count don't agree then these should stay in the unmatched_atomtypes
+                    if not atom_typecounts[child_name] == reference_counts[child_name]:
+                        includeBase = True
+                        break
+
+            # Remove atomtypes from completed element branches
+            if not includeBase:
+                self.unmatched_atomtypes.remove([base_smarts, base_typename])
+                for child in self.parents[base_smarts]:
+                    self.unmatched_atomtypes.remove(child)
+
+        return
+
     def print_parent_tree(self, roots, start=''):
         """
         Recursively prints the parent tree. 
@@ -839,7 +785,8 @@ class AtomTypeSampler(object):
         for r in roots:
             print("%s%s" % (start, r))
             if r in self.parents.keys():
-                self.print_parent_tree(self.parents[r], start+'\t')
+                new_roots = [smart for [smart, name] in self.parents[r]]
+                self.print_parent_tree(new_roots, start+'\t')
 
 
     def run(self, niterations, trajFile=None):
@@ -865,6 +812,15 @@ class AtomTypeSampler(object):
                 print("Iteration %d / %d" % (iteration, niterations))
 
             accepted = self.sample_atomtypes()
+            [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
+            self.get_unfinishedAtomList(atom_typecounts, molecule_typecounts, atomtype_matches = self.atom_type_matches)
+
+            if trajFile is not None:
+                # Get data as list of csv strings
+                lines = self.save_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
+                # Add lines to trajectory with iteration number:
+                for l in lines:
+                    self.traj.append('%i,%s \n' % (iteration, l))
 
             if self.verbose:
                 if accepted:
@@ -873,20 +829,13 @@ class AtomTypeSampler(object):
                     print('Rejected.')
 
                 # Compute atomtype statistics on molecules.
-                [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
                 self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
-
-                # Get data as list of csv strings
-                lines = self.save_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
-                # Add lines to trajectory with iteration number:
-                for l in lines:
-                    self.traj.append('%i,%s \n' % (iteration, l))
                 print('')
 
         if trajFile is not None:
             # make "trajectory" file
             if os.path.isfile(trajFile):
-                print "trajectory file already exists, it was overwritten"
+                print("trajectory file already exists, it was overwritten")
             f = open(trajFile, 'w')
             start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
             f.writelines(start + self.traj)
@@ -901,7 +850,8 @@ class AtomTypeSampler(object):
             roots = self.parents.keys()
             # Remove keys from roots if they are children
             for parent, children in self.parents.items():
-                for child in children:
+                child_smarts = [smarts for [smarts, name] in children]
+                for child in child_smarts:
                     if child in roots:
                         roots.remove(child)
 
