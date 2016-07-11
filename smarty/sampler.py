@@ -491,7 +491,6 @@ class AtomTypeSampler(object):
 
                 # Update proposed parent dictionary
                 proposed_parents[original_basetype].append([proposed_atomtype, proposed_typename])
-                print "proposed_parents: " + str(proposed_parents)
 
             proposed_parents[proposed_atomtype] = []
 
@@ -568,7 +567,6 @@ class AtomTypeSampler(object):
             self.atomtypes = proposed_atomtypes
             self.molecules = proposed_molecules
             self.parents = proposed_parents
-            print "------------ self.parents= " + str(self.parents)
             self.atom_type_matches = proposed_atom_type_matches
             self.total_atom_type_matches = proposed_total_atom_type_matches
             return True
@@ -718,7 +716,7 @@ class AtomTypeSampler(object):
                     reference_counts[typename] = count
 
         # If all of a basetype and it's children match found atoms and reference remove from list
-        for [base_smarts, base_typename] in self.basetypes:
+        for [base_smarts, base_typename] in self.used_basetypes:
             includeBase = True
             
             # If the number of atoms matches the references are the same for basetypes and their children
@@ -796,6 +794,18 @@ class AtomTypeSampler(object):
                 # Compute atomtype statistics on molecules.
                 self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
                 print('')
+
+                # Print parent tree as it is now.
+                roots = self.parents.keys()
+                # Remove keys from roots if they are children
+                for parent, children in self.parents.items():
+                    child_smarts = [smarts for [smarts, name] in children]
+                    for child in child_smarts:
+                        if child in roots:
+                            roots.remove(child)
+
+                print("Atom type hierarchy:")
+                self.print_parent_tree(roots, '\t')
 
         if trajFile is not None:
             # make "trajectory" file
