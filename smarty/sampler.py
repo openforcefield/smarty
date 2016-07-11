@@ -718,7 +718,7 @@ class AtomTypeSampler(object):
                     reference_counts[typename] = count
 
         # If all of a basetype and it's children match found atoms and reference remove from list
-        for [base_smarts, base_typename] in self.basetypes:
+        for [base_smarts, base_typename] in self.used_basetypes:
             includeBase = True
             
             # If the number of atoms matches the references are the same for basetypes and their children
