@@ -108,12 +108,12 @@ class AtomTypeSampler(object):
             self.basetypes[idx] = [smarts, 'c_'+typename]
 
         # Check if the decorator file is compatible with decorator behavior
-        if self.decorator_behavior == 'combinatorial-decorators':
-            if self.decorators[0][0].find('z')==-1: # not found 'z' - 'z' is necessary for Combinatorial decorator
-                raise Exception ("Decorators format not compatible  with decorator behavior option.")
-        else:
-            if self.decorators[0][0].find('z')!=-1: # found 'z' - 'z' cannot be in Simple decorator
-                raise Exception ("Decorators format not compatible  with decorator behavior option.")
+        #if self.decorator_behavior == 'combinatorial-decorators':
+        #    if self.decorators[0][0].find('z')==-1: # not found 'z' - 'z' is necessary for Combinatorial decorator
+        #        raise Exception ("Decorators format not compatible  with decorator behavior option.")
+        #else:
+        #    if self.decorators[0][0].find('z')!=-1: # found 'z' - 'z' cannot be in Simple decorator
+        #        raise Exception ("Decorators format not compatible  with decorator behavior option.")
         
         # Store a copy of the basetypes, as these (and only these) are allowed
         # to end up with zero occupancy
@@ -328,6 +328,103 @@ class AtomTypeSampler(object):
         print('%d / %d total atoms match (%.3f %%)' % (total_atom_type_matches, self.total_atoms, fraction_matched_atoms * 100))
 
         return fraction_matched_atoms
+    
+    
+    def AtomDecorator(self, atom1type, decorators, natombasetypes):
+        """
+        Take a specified atomtype apply one of the provided decorators to it, returning a tuple containing a 
+        SMARTS string corresponding to a decorated atomtype and the corresponding name
+        """
+        if re.match('\$\(\*[=~:\-#](\w+)\)', decorators[0]) != None:
+            # There is a bond - two atom types
+            result = re.match('\[(.+)\]', atom1type[0])
+            basetype_index = random.randint(0, natombasetypes-1)
+            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
+            new_dec = decorators[0].replace("z", basetype)
+            proposed_atomtype = '[' + result.groups(1)[0] + new_dec + ']'
+            proposed_typename = atom1type[1] + ' ' + basetype_typename +  ' ' + decorators[1]
+        else:
+            # Only one atom type
+            result = re.match('\[(.+)\]', atom1type[0])
+            proposed_atomtype = '[' + result.groups(1)[0] + decorators[0] + ']'
+            proposed_typename = atom1type[1] + ' ' + decorators[1]
+        return proposed_atomtype, proposed_typename
+
+    def PickAnAtom(self, natomtypes):
+        """
+        takes a desired current set of atomtypes (current, base, populated base, or some combination of the 
+        above or something else) and pick one at random. (Here, we will typically but perhaps not always want 
+        to use currently populated atomtypes, i.e. the atomtypes list, not basetypes (generic types) or 
+        used_basetypes (base types which type anything)). A little silly, but still helpful. 
+        Returns a tuple corresponding to the selected (smarts, name).
+        """
+        atomtype_index = random.randint(0, natomtypes-1)
+        (atomtype, typename) = self.atomtypes[atomtype_index]
+        return (atomtype, typename)
+    
+    def HasAlpha(self, atom1type):
+        """
+        Takes a specified atomtype tuple (smarts, name) and determines whether or not it already has an alpha 
+        substituent, returning True or False.
+        """
+        print atom1type[0]
+        if atom1type[0].find("$") != -1:
+            print "There is a bond!! HasAlpha function"
+            return True
+        else:
+            return False
+
+    def AddAlphaSubstituentAtom(self, atom1type, bondset, atom2type):
+        """
+        Takes specified atomtypes atom1type and atom2type (where atom1type is a type without an alpha substituent), 
+        and a specified bond set, and introduces an alpha substituent involving atom2type (which can be a decorated 
+        type such as output by AtomDecorator); returns a tuple of (smarts, name) from the result. Example output 
+        for input of atom1type=("[#1]", "hydrogen"), bondset = (['-'], "single"), and atom2type = ("[#6]" is 
+        ("[#1$(*-[#6])]", "hydrogen singly bonded to carbon") or something along those lines. This should basically 
+        just be adding $(*zw) where z is the selected bond type and w is atom2type. It should raise an exception 
+        if an alpha substituent is attempted to be added to an atom1type which already has an alpha substituent.
+        """
+        print atom1type[0]
+        print atom2type[0]
+        print bondset[0]
+        result = re.match('\[(.+)\]', atom1type[0])
+        proposed_atomtype = '[' + result.groups(1)[0] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
+        proposed_typename = atom1type[1] + ' ' + bondset[1] + ' ' + atom2type[1]
+        return proposed_atomtype, proposed_typename
+
+    def AddBetaSubstituentAtom(self, atom1type, bondset, atom2type):
+        """
+        Takes specified atomtypes atom1type and atom2type (where atom1type is a type WITH an alpha substituent), 
+        and a specified bond set, and introduces an alpha substituent involving atom2type (which can be a 
+        decorated type such as output by AtomDecorator); returns a tuple of (smarts, name) from the result. 
+        Example output for input of atom1type=("[#1$(*-[#6])]", "hydrogen singly bonded to carbon"), 
+        bondset = (['-'], "single"), and atom2type = ("[#8]" is ("[#1$(*-[#6]-[#8])]", "hydrogen singly bonded 
+        to (carbon singly bonded to oxygen)") or something along those lines. This will have to handle two cases 
+        separately -- addition of the first beta substituent (where it is inserted between the characters (] and 
+        is inserted without parens), and addition of subsequent beta substituents (where it is inserted after 
+        the first set of [] in the substituent and is inserted enclosed in parens, i.e. (-[w]).) It should raise 
+        an exception if a beta substituent is attempted to be added to an atom1type which does not have an alpha 
+        substituent.
+        """
+        s = atom1type[0][atom1type[0].find("(")+1:atom1type[0].find(")")]
+        print s
+        proposed_atomtype = ""
+        number_brackets = 0
+        if s.count('[') == 1 or s.count('[') == 2:
+            # Has only one atomtype, add after the first one
+            for i in atom1type[0]:
+                proposed_atomtype += i
+                if i == ']' and number_brackets == 0:
+                    proposed_atomtype += bondset[0] + atom2type[0]
+                    number_brackets += 1
+            proposed_typename = atom1type[1] + bondset[1] + atom2type[1]
+        else:
+            # Has 3 atomtypes, add ?????
+            proposed_atomtype = '[' + atom1type[0] + bondset[0] + atom2type[0] + ']'
+            proposed_typename = atom1type[1] + ' (' + bondset[1] + ' ' + atom2type[1] + ')'
+        print "ADD BETA SUB: proposed --- " + str(proposed_atomtype) + " " + str(proposed_typename)
+        return proposed_atomtype, proposed_typename
+
 
     def sample_atomtypes(self):
         """
@@ -393,103 +490,138 @@ class AtomTypeSampler(object):
 
             else:
                 # combinatorial-decorators
-                number_decorators = random.randint(1,3)
-                print "number of decorator= " + str(number_decorators)
-                # Pick a decorator and a basetype
-                decorator_index = random.randint(0, ndecorators-1)
-                (decorator, decorator_typename) = self.decorators[decorator_index]
-                basetype_index = random.randint(0, natombasetypes-1)
-                (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                original_basetype = basetype
-                if number_decorators == 1:
-                    # One or Two atom type and one decorator
-                    print "ONE DECORATOR"
-                    if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                        # There is a bond - two atom types
-                        result = re.match('\[(.+)\]', basetype)
-                        basetype_index = random.randint(0, natombasetypes-1)
-                        (basetype, basetype_typename2) = self.atom_basetype[basetype_index]
-                        new_dec = decorator.replace("z", basetype)
-                        proposed_atomtype = '[' + result.groups(1)[0] + new_dec + ']'
-                        proposed_typename = basetype_typename2 + ' ' + basetype_typename +  ' ' + decorator_typename
-                    else:
-                        # Only one atom type
-                        result = re.match('\[(.+)\]', basetype)
-                        proposed_atomtype = '[' + result.groups(1)[0] + decorator + ']'
-                        proposed_typename = basetype_typename + ' ' + decorator_typename
-                elif number_decorators == 2:
-                    print "TWO DECORATORS"
-                    # Two atom types and two decorator
-                    idx = 0
-                    proposed_typename = ''
-                    proposed_atomtype = ''
-                    result = re.match('\[(.+)\]', basetype)
-                    proposed_atomtype += result.groups(1)[0]
-                    proposed_typename += basetype_typename + ' '
-                    while idx < 2:
-                        decorator_index = random.randint(0, ndecorators-1)
-                        (decorator, decorator_typename) = self.decorators[decorator_index]
-                        print decorator
-                        if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                            basetype_index = random.randint(0, natombasetypes-1)
-                            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                            new_dec = decorator.replace("z", basetype)
-                            proposed_typename += basetype_typename + ' ' + decorator_typename + ' '
-                        else:
-                            new_dec = decorator
-                            proposed_typename += decorator_typename + ' '
-                        proposed_atomtype += new_dec
-                        print proposed_atomtype
-                        idx += 1
-                    proposed_atomtype = '[' + proposed_atomtype + ']'
+                
+                bondset = [("-","simply"), ("=", "doubly"), ("#","triply"), (":", "aromatic"), ("~","any")]
+                nbondset = len(bondset)
+                
+                # Pick an atomtype
+                atom1type = self.PickAnAtom(natomtypes)
+                print atom1type
+                # Check if we need to add an alfa or beta substituent
+                if self.HasAlpha(atom1type) == True:
+                    print "has alpha"
+                    bondset_index = random.randint(0, nbondset-1)
+                    atom2type = self.PickAnAtom(natomtypes)
+                    (proposed_atomtype, proposed_typename) = self.AddBetaSubstituentAtom(atom1type, bondset[bondset_index], atom2type)
+                    if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                 else:
-                    print "THREE DECORATORS"
-                    # Two atom types and three decorator
-                    idx = 0
-                    proposed_typename = ''
-                    proposed_atomtype = ''
-                    n_basetype = 1
-                    decorator_bonds = 0
-                    result = re.match('\[(.+)\]', basetype)
-                    proposed_atomtype += result.groups(1)[0]
-                    proposed_typename += basetype_typename + ' '
-                    while idx < 3:
+                    print "has no alpha"
+                    if random.random() < 0.5:
+                        # Add a no-bond decorator
                         decorator_index = random.randint(0, ndecorators-1)
-                        (decorator, decorator_typename) = self.decorators[decorator_index]
-                        while decorator in proposed_atomtype: # Check if you already have that decorator to the base atom
-                            decorator_index = random.randint(0, ndecorators-1)
-                            (decorator, decorator_typename) = self.decorators[decorator_index]
-                        if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                            basetype_index = random.randint(0, natombasetypes-1)
-                            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                            new_dec = decorator.replace("z", basetype)
-                            n_basetype += 1
-                            decorator_bonds += 1
-                            if decorator_bonds > 1:
-                                # Can either decorate the main atom type or another atom bonded to the main atom type
-                                if random.random() < 0.5:
-                                    # Add decorator to another decorator
-                                    new_dec = new_dec + ')'
-                                    new_dec = re.sub('\)', new_dec, proposed_atomtype) # Sub parentheses to the new decorator
-                                    print "*** Proposed atom type after add a decorator to another decorator: " + str(new_dec)
-                                    proposed_atomtype = new_dec
-                                else:
-                                    proposed_atomtype += new_dec
-                            else:
-                                proposed_atomtype += new_dec
-                            proposed_typename += basetype_typename + ' ' + decorator_typename + ' '
-                        else:
-                            new_dec = decorator
-                            proposed_atomtype += new_dec
-                            proposed_typename += decorator_typename + ' '
-                        idx += 1
-                    proposed_atomtype = '[' + proposed_atomtype + ']'
+                        #(decorator, decorator_typename) = self.decorators[decorator_index]
+                        (proposed_atomtype, proposed_typename) = self.AtomDecorator(atom1type, self.decorators[decorator_index], natombasetypes)
+                        #if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atomtype, atomtype_typename, decorator, decorator_typename, proposed_atomtype, proposed_typename))
+                        if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
+                    else:
+                        bondset_index = random.randint(0, nbondset-1)
+                        atom2type = self.PickAnAtom(natomtypes)
+                        (proposed_atomtype, proposed_typename) = self.AddAlphaSubstituentAtom(atom1type, bondset[bondset_index], atom2type)
+                        if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
+                
 
-                if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
+                # Takes a desired current set of atomtypes (current, base, populated base, or some combination
+                # of the above or something else) and pick one at random
+                #atom1type_index = random.randint(0, natomtypes-1)
+                #(atom1type, atom1type_typename) = self.atomtypes[atom1type_index]
 
-                # Update proposed parent dictionary
-                proposed_parents[original_basetype].append(proposed_atomtype)
-                print "proposed_parents: " + str(proposed_parents)
+                #number_decorators = random.randint(1,3)
+                #print "number of decorator= " + str(number_decorators)
+                # Pick a decorator and a basetype
+                #decorator_index = random.randint(0, ndecorators-1)
+                #(decorator, decorator_typename) = self.decorators[decorator_index]
+                #basetype_index = random.randint(0, natombasetypes-1)
+                #(basetype, basetype_typename) = self.atom_basetype[basetype_index]
+                #original_basetype = basetype
+                #if number_decorators == 1:
+                #    # One or Two atom type and one decorator
+                #    print "ONE DECORATOR"
+                #    if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
+                #        # There is a bond - two atom types
+                #        result = re.match('\[(.+)\]', basetype)
+                #        basetype_index = random.randint(0, natombasetypes-1)
+                #        (basetype, basetype_typename2) = self.atom_basetype[basetype_index]
+                #        new_dec = decorator.replace("z", basetype)
+                #        proposed_atomtype = '[' + result.groups(1)[0] + new_dec + ']'
+                #        proposed_typename = basetype_typename2 + ' ' + basetype_typename +  ' ' + decorator_typename
+                #    else:
+                #        # Only one atom type
+                #        result = re.match('\[(.+)\]', basetype)
+                #        proposed_atomtype = '[' + result.groups(1)[0] + decorator + ']'
+                #        proposed_typename = basetype_typename + ' ' + decorator_typename
+                #elif number_decorators == 2:
+                #    print "TWO DECORATORS"
+                #    # Two atom types and two decorator
+                #    idx = 0
+                #    proposed_typename = ''
+                #    proposed_atomtype = ''
+                #    result = re.match('\[(.+)\]', basetype)
+                #    proposed_atomtype += result.groups(1)[0]
+                #    proposed_typename += basetype_typename + ' '
+                #    while idx < 2:
+                #        decorator_index = random.randint(0, ndecorators-1)
+                #        (decorator, decorator_typename) = self.decorators[decorator_index]
+                #        print decorator
+                #        if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
+                #            basetype_index = random.randint(0, natombasetypes-1)
+                #            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
+                #            new_dec = decorator.replace("z", basetype)
+                #            proposed_typename += basetype_typename + ' ' + decorator_typename + ' '
+                #        else:
+                #            new_dec = decorator
+                #            proposed_typename += decorator_typename + ' '
+                #        proposed_atomtype += new_dec
+                #        print proposed_atomtype
+                #        idx += 1
+                #    proposed_atomtype = '[' + proposed_atomtype + ']'
+                #else:
+                #    print "THREE DECORATORS"
+                #    # Two atom types and three decorator
+                #    idx = 0
+                #    proposed_typename = ''
+                #    proposed_atomtype = ''
+                #    n_basetype = 1
+                #    decorator_bonds = 0
+                #    result = re.match('\[(.+)\]', basetype)
+                #    proposed_atomtype += result.groups(1)[0]
+                #    proposed_typename += basetype_typename + ' '
+                #    while idx < 3:
+                #        decorator_index = random.randint(0, ndecorators-1)
+                #        (decorator, decorator_typename) = self.decorators[decorator_index]
+                #        while decorator in proposed_atomtype: # Check if you already have that decorator to the base atom
+                #            decorator_index = random.randint(0, ndecorators-1)
+                #            (decorator, decorator_typename) = self.decorators[decorator_index]
+                #        if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
+                #            basetype_index = random.randint(0, natombasetypes-1)
+                #            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
+                #            new_dec = decorator.replace("z", basetype)
+                #            n_basetype += 1
+                #            decorator_bonds += 1
+                #            if decorator_bonds > 1:
+                #                # Can either decorate the main atom type or another atom bonded to the main atom type
+                #                if random.random() < 0.5:
+                #                    # Add decorator to another decorator
+                #                    new_dec = new_dec + ')'
+                #                    new_dec = re.sub('\)', new_dec, proposed_atomtype) # Sub parentheses to the new decorator
+                #                    print "*** Proposed atom type after add a decorator to another decorator: " + str(new_dec)
+                #                    proposed_atomtype = new_dec
+                #                else:
+                #                    proposed_atomtype += new_dec
+                #            else:
+                #                proposed_atomtype += new_dec
+                #            proposed_typename += basetype_typename + ' ' + decorator_typename + ' '
+                #        else:
+                #            new_dec = decorator
+                #            proposed_atomtype += new_dec
+                #            proposed_typename += decorator_typename + ' '
+                #        idx += 1
+                #    proposed_atomtype = '[' + proposed_atomtype + ']'
+
+                #if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
+
+                ## Update proposed parent dictionary
+                #proposed_parents[original_basetype].append(proposed_atomtype)
+                #print "proposed_parents: " + str(proposed_parents)
 
             proposed_parents[proposed_atomtype] = []
 
