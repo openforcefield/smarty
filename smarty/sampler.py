@@ -335,24 +335,43 @@ class AtomTypeSampler(object):
         return fraction_matched_atoms
     
     
-    def AtomDecorator(self, atom1type, decorators, natombasetypes):
+    #def AtomDecorator(self, atom1type, decorators, natombasetypes):
+    #    """
+    #    Take a specified atomtype apply one of the provided decorators to it, returning a tuple containing a 
+    #    SMARTS string corresponding to a decorated atomtype and the corresponding name
+    #    """
+    #    if re.match('\$\(\*[=~:\-#](\w+)\)', decorators[0]) != None:
+    #        # There is a bond - two atom types
+    #       result = re.match('\[(.+)\]', atom1type[0])
+    #        basetype_index = random.randint(0, natombasetypes-1)
+    #        (basetype, basetype_typename) = self.atom_basetype[basetype_index]
+    #        new_dec = decorators[0].replace("z", basetype)
+    #        proposed_atomtype = '[' + result.groups(1)[0] + new_dec + ']'
+    #        proposed_typename = atom1type[1] + ' ' + basetype_typename +  ' ' + decorators[1]
+    #    else:
+    #        # Only one atom type
+    #        result = re.match('\[(.+)\]', atom1type[0])
+    #        proposed_atomtype = '[' + result.groups(1)[0] + decorators[0] + ']'
+    #        proposed_typename = atom1type[1] + ' ' + decorators[1]
+    #    return proposed_atomtype, proposed_typename
+
+
+    # I didn't understand why there were base types being introduced in this metho
+    # It should just be decorating the atom, nothing else. 
+    def AtomDecorator(self, atom1type, decorator):
         """
-        Take a specified atomtype apply one of the provided decorators to it, returning a tuple containing a 
-        SMARTS string corresponding to a decorated atomtype and the corresponding name
+        Given an atom and a decorator ammend the SMARTS string with that decorator 
+        Returns at "atom" which is a tuple of [SMARTS, typeName] for the decorated atom
         """
-        if re.match('\$\(\*[=~:\-#](\w+)\)', decorators[0]) != None:
-            # There is a bond - two atom types
-            result = re.match('\[(.+)\]', atom1type[0])
-            basetype_index = random.randint(0, natombasetypes-1)
-            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-            new_dec = decorators[0].replace("z", basetype)
-            proposed_atomtype = '[' + result.groups(1)[0] + new_dec + ']'
-            proposed_typename = atom1type[1] + ' ' + basetype_typename +  ' ' + decorators[1]
+        if self.HasAlpha(atom1type):
+            # decorators should go before the $ sign on the atom
+            dollar = atom1type[0].find('$')
+            proposed_atomtype = atom1type[0][:dollar] + decorator[0] + atom3[0][dollar:]
+            proposed_typename = atom1type[1] + decorator[1]
         else:
-            # Only one atom type
-            result = re.match('\[(.+)\]', atom1type[0])
-            proposed_atomtype = '[' + result.groups(1)[0] + decorators[0] + ']'
-            proposed_typename = atom1type[1] + ' ' + decorators[1]
+            # No alpha atom so the decorator goes before the ']'
+            proposed_atomtype = atom1type[0][:-1] + decorator[0] + ']'
+            proposed_typename = atom1type[1] + decorator[1]
         return proposed_atomtype, proposed_typename
 
     def PickAnAtom(self, atomList):
@@ -519,15 +538,15 @@ class AtomTypeSampler(object):
                     if random.random() < 0.5:
                         # Add a no-bond decorator
                         decorator_index = random.randint(0, ndecorators-1)
-                        #(decorator, decorator_typename) = self.decorators[decorator_index]
-                        proposed_atomtype, proposed_typename = self.AtomDecorator(atom1type, self.decorators[decorator_index], natombasetypes)
-                        #if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atomtype, atomtype_typename, decorator, decorator_typename, proposed_atomtype, proposed_typename))
-                        if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
+                        decorator = self.decorators[decorator_index]
+                        proposed_atomtype, proposed_typename = self.AtomDecorator(atom1type, decorator, natombasetypes)
+                        if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], decorator[0], decorator[1], proposed_atomtype, proposed_typename))
+                        #if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                     else:
                         bondset_index = random.randint(0, nbondset-1)
                         atom2type = self.PickAnAtom(self.basetypes)
                         proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type)
-                        if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
+                        if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
 
                 if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
 
