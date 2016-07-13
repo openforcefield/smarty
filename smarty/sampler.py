@@ -429,14 +429,18 @@ class AtomTypeSampler(object):
         an exception if a beta substituent is attempted to be added to an atom1type which does not have an alpha 
         substituent.
         """
-        s = atom1type[0][atom1type[0].find("(")+1:atom1type[0].find(")")]
-        if self.verbose: print s
+        #s = atom1type[0][atom1type[0].find("(")+1:atom1type[0].find(")")]
+        #if self.verbose: print s
+
+        # counting '[' tells us how many atoms are in the mix
+        count = atom1type[0].count('[')
         proposed_atomtype = ""
         number_brackets = 0
         # find closed alpha atom
         closeAlpha = atom1type[0].find(']')
-        # Has an alpha atom, but no beta atom
-        if s.count('[') == 2: 
+
+        # This has two atoms (already has an alpha atom)
+        if count == 2: 
             proposed_atomtype = atomtype[0][:closeAlpha+1]
             proposed_atomtype += bondset[0] + atom2type[0] + ')]'
             #for i in atom1type[0]:
@@ -445,14 +449,16 @@ class AtomTypeSampler(object):
             #        proposed_atomtype += bondset[0] + atom2type[0]
             #        number_brackets += 1
             proposed_typename = atom1type[1] + bondset[1] + atom2type[1]
-        elif s.count('[') > 2:
+
+        elif count > 2:
             # Has an alpha atom with at least 1 beta atom
             proposed_atomtype = atom1type[0][:closeAlpha+1]
             proposed_atomtype += '(' + bondset[0] + atom2type[0] + ')'
             proposed_atomtype += atom1type[0][closeAlpha+1:]
             proposed_typename = atom1type[1] + ' (' + bondset[1] + ' ' + atom2type[1] + ')'
+
         else:
-            # Doesn't have an alpha atom so add one of these instead
+            # Has only 1 atom which means there isn't an alpha atom yet, add an alpha atom instead
             proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondset, atom2type) 
         if self.verbose: print("ADD BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
         return proposed_atomtype, proposed_typename
@@ -539,7 +545,7 @@ class AtomTypeSampler(object):
                         # Add a no-bond decorator
                         decorator_index = random.randint(0, ndecorators-1)
                         decorator = self.decorators[decorator_index]
-                        proposed_atomtype, proposed_typename = self.AtomDecorator(atom1type, decorator, natombasetypes)
+                        proposed_atomtype, proposed_typename = self.AtomDecorator(atom1type, decorator)
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], decorator[0], decorator[1], proposed_atomtype, proposed_typename))
                         #if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                     else:
