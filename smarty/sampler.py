@@ -449,6 +449,7 @@ class AtomTypeSampler(object):
             #        proposed_atomtype += bondset[0] + atom2type[0]
             #        number_brackets += 1
             proposed_typename = atom1type[1] + bondset[1] + atom2type[1]
+            if self.verbose: print("ADD FIRST BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
 
         elif count > 2:
             # Has an alpha atom with at least 1 beta atom
@@ -456,11 +457,11 @@ class AtomTypeSampler(object):
             proposed_atomtype += '(' + bondset[0] + atom2type[0] + ')'
             proposed_atomtype += atom1type[0][closeAlpha+1:]
             proposed_typename = atom1type[1] + ' (' + bondset[1] + ' ' + atom2type[1] + ')'
+            if self.verbose: print("ADD MORE BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
 
         else:
             # Has only 1 atom which means there isn't an alpha atom yet, add an alpha atom instead
             proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondset, atom2type) 
-        if self.verbose: print("ADD BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
         return proposed_atomtype, proposed_typename
 
 
@@ -530,13 +531,14 @@ class AtomTypeSampler(object):
                 # combinatorial-decorators
                 nbondset = len(self.bondset)
                 # Pick an atomtype
-                atom1type = self.PickAnAtom(self.atomtypes)
-                print atom1type
+                #atom1type = self.PickAnAtom(self.atomtypes)
+                atom1type = self.PickAnAtom(self.unmatched_atomtypes)
+                if self.verbose: print("atom1: %s (%s)" % ( atom1type[0], atom1type[1]))
                 # Check if we need to add an alfa or beta substituent
                 if self.HasAlpha(atom1type):
                     if self.verbose: print("has alpha")
                     bondset_index = random.randint(0, nbondset-1)
-                    atom2type = self.PickAnAtom(self.basetypes)
+                    atom2type = self.PickAnAtom(self.used_basetypes)
                     proposed_atomtype, proposed_typename = self.AddBetaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type)
                     if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                 else:
@@ -550,7 +552,7 @@ class AtomTypeSampler(object):
                         #if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                     else:
                         bondset_index = random.randint(0, nbondset-1)
-                        atom2type = self.PickAnAtom(self.basetypes)
+                        atom2type = self.PickAnAtom(self.used_basetypes)
                         proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type)
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
 
