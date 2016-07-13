@@ -465,7 +465,7 @@ class AtomTypeSampler(object):
         return proposed_atomtype, proposed_typename
 
 
-    def sample_atomtypes(self):
+    
         """
         Perform one step of atom type sampling.
 
@@ -556,7 +556,7 @@ class AtomTypeSampler(object):
                         proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type)
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
 
-                if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
+                #if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
 
                 # Update proposed parent dictionary
                 proposed_parents[atom1type[0]].append([proposed_atomtype, proposed_typename])
