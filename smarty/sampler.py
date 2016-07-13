@@ -95,6 +95,9 @@ class AtomTypeSampler(object):
         # Define internal typing tag.
         self.typetag = 'atomtype'
 
+        # Save bond list to use throughout
+        self.bondset = [("-","simply"), ("=", "doubly"), ("#","triply"), (":", "aromatic"), ("~","any")]
+
         # Read atomtypes (initial and base) and decorators.
         self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
         self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
@@ -352,7 +355,7 @@ class AtomTypeSampler(object):
             proposed_typename = atom1type[1] + ' ' + decorators[1]
         return proposed_atomtype, proposed_typename
 
-    def PickAnAtom(self, natomtypes):
+    def PickAnAtom(self, atomList):
         """
         takes a desired current set of atomtypes (current, base, populated base, or some combination of the 
         above or something else) and pick one at random. (Here, we will typically but perhaps not always want 
@@ -360,10 +363,9 @@ class AtomTypeSampler(object):
         used_basetypes (base types which type anything)). A little silly, but still helpful. 
         Returns a tuple corresponding to the selected (smarts, name).
         """
-        atomtype_index = random.randint(0, natomtypes-1)
-        (atomtype, typename) = self.atomtypes[atomtype_index]
-        return (atomtype, typename)
-    
+        atomtype_index = random.randint(0, len(atomList)-1)
+        return atomList[atomtype_index]
+
     def HasAlpha(self, atom1type):
         """
         Takes a specified atomtype tuple (smarts, name) and determines whether or not it already has an alpha 
@@ -385,9 +387,10 @@ class AtomTypeSampler(object):
         just be adding $(*zw) where z is the selected bond type and w is atom2type. It should raise an exception 
         if an alpha substituent is attempted to be added to an atom1type which already has an alpha substituent.
         """
-        print atom1type[0]
-        print atom2type[0]
-        print bondset[0]
+        if self.verbose: 
+            print(atom1type[0])
+            print(atom2type[0])
+            print(bondset[0])
         result = re.match('\[(.+)\]', atom1type[0])
         proposed_atomtype = '[' + result.groups(1)[0] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
         proposed_typename = atom1type[1] + ' ' + bondset[1] + ' ' + atom2type[1]
@@ -408,22 +411,31 @@ class AtomTypeSampler(object):
         substituent.
         """
         s = atom1type[0][atom1type[0].find("(")+1:atom1type[0].find(")")]
-        print s
+        if self.verbose: print s
         proposed_atomtype = ""
         number_brackets = 0
-        if s.count('[') == 1 or s.count('[') == 2:
-            # Has only one atomtype, add after the first one
-            for i in atom1type[0]:
-                proposed_atomtype += i
-                if i == ']' and number_brackets == 0:
-                    proposed_atomtype += bondset[0] + atom2type[0]
-                    number_brackets += 1
+        # find closed alpha atom
+        closeAlpha = atom1type[0].find(']')
+        # Has an alpha atom, but no beta atom
+        if s.count('[') == 2: 
+            proposed_atomtype = atomtype[0][:closeAlpha+1]
+            proposed_atomtype += bondset[0] + atom2type[0] + ')]'
+            #for i in atom1type[0]:
+            #    proposed_atomtype += i
+            #    if i == ']' and number_brackets == 0:
+            #        proposed_atomtype += bondset[0] + atom2type[0]
+            #        number_brackets += 1
             proposed_typename = atom1type[1] + bondset[1] + atom2type[1]
-        else:
-            # Has 3 atomtypes, add ?????
-            proposed_atomtype = '[' + atom1type[0] + bondset[0] + atom2type[0] + ']'
+        elif s.count('[') > 2:
+            # Has an alpha atom with at least 1 beta atom
+            proposed_atomtype = atom1type[0][:closeAlpha+1]
+            proposed_atomtype += '(' + bondset[0] + atom2type[0] + ')'
+            proposed_atomtype += atom1type[0][closeAlpha+1:]
             proposed_typename = atom1type[1] + ' (' + bondset[1] + ' ' + atom2type[1] + ')'
-        print "ADD BETA SUB: proposed --- " + str(proposed_atomtype) + " " + str(proposed_typename)
+        else:
+            # Doesn't have an alpha atom so add one of these instead
+            proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondset, atom2type) 
+        if self.verbose: print("ADD BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
         return proposed_atomtype, proposed_typename
 
 
@@ -491,17 +503,16 @@ class AtomTypeSampler(object):
 
             else:
                 # combinatorial-decorators
-                bondset = [("-","simply"), ("=", "doubly"), ("#","triply"), (":", "aromatic"), ("~","any")]
-                nbondset = len(bondset)
+                nbondset = len(self.bondset)
                 # Pick an atomtype
-                atom1type = self.PickAnAtom(natomtypes)
+                atom1type = self.PickAnAtom(self.atomtypes)
                 print atom1type
                 # Check if we need to add an alfa or beta substituent
-                if self.HasAlpha(atom1type) == True:
-                    print "has alpha"
+                if self.HasAlpha(atom1type):
+                    if self.verbose: print("has alpha")
                     bondset_index = random.randint(0, nbondset-1)
-                    atom2type = self.PickAnAtom(natomtypes)
-                    proposed_atomtype, proposed_typename = self.AddBetaSubstituentAtom(atom1type, bondset[bondset_index], atom2type)
+                    atom2type = self.PickAnAtom(self.basetypes)
+                    proposed_atomtype, proposed_typename = self.AddBetaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type)
                     if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                 else:
                     print "has no alpha"
@@ -514,8 +525,8 @@ class AtomTypeSampler(object):
                         if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                     else:
                         bondset_index = random.randint(0, nbondset-1)
-                        atom2type = self.PickAnAtom(natomtypes)
-                        proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondset[bondset_index], atom2type)
+                        atom2type = self.PickAnAtom(self.basetypes)
+                        proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type)
                         if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
 
                 if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
