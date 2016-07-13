@@ -441,7 +441,7 @@ class AtomTypeSampler(object):
 
         # This has two atoms (already has an alpha atom)
         if count == 2: 
-            proposed_atomtype = atomtype[0][:closeAlpha+1]
+            proposed_atomtype = atom1type[0][:closeAlpha+1]
             proposed_atomtype += bondset[0] + atom2type[0] + ')]'
             #for i in atom1type[0]:
             #    proposed_atomtype += i
