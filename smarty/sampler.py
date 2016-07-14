@@ -465,7 +465,7 @@ class AtomTypeSampler(object):
         return proposed_atomtype, proposed_typename
 
 
-    
+   def sample_atomtypes(self): 
         """
         Perform one step of atom type sampling.
 
