@@ -119,6 +119,7 @@ class AtomTyper(object):
         # Assign atom types using rules.
         OEAssignAromaticFlags(mol)
         for pat,type,smarts in self.smartsList:
+            OEPrepareSearch(mol, pat)
             for matchbase in pat.Match(mol):
                 for matchpair in matchbase.GetAtoms():
                     matchpair.target.SetStringData(self.pattyTag,type)
