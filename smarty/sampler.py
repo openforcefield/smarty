@@ -557,7 +557,7 @@ class AtomTypeSampler(object):
                 # Reject if parent type is now unused, UNLESS it is a base type
                 if (proposed_atom_typecounts[atom1typename] == 0) and (atom1smarts not in self.basetypes_smarts):
                     # Reject because new type is unused in dataset.
-                    if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atomtype, atomtype_typename))
+                    if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atom1smarts, atom1typename))
                     valid_proposal = False
             except AtomTyper.TypingException as e:
                 print("Exception: %s" % str(e))
