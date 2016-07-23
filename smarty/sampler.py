@@ -12,8 +12,7 @@ Example illustrating a scheme to create and destroy atom types automatically usi
 AUTHORS
 
 John Chodera <john.chodera@choderalab.org>, Memorial Sloan Kettering Cancer Center.
-Additional contributions from the Mobley lab, UC Irvine, including David Mobley
-and Caitlin Bannan.
+Additional contributions from the Mobley lab, UC Irvine, including David Mobley, Caitlin Bannan, and Camila Zanette.
 
 The AtomTyper class is based on 'patty' by Pat Walters, Vertex Pharmaceuticals.
 
@@ -100,7 +99,6 @@ class AtomTypeSampler(object):
 
         # Read atomtypes (initial and base) and decorators.
         self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
-        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
         self.basetypes = AtomTyper.read_typelist(basetypes_filename)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
@@ -110,19 +108,8 @@ class AtomTypeSampler(object):
             self.atomtypes[idx] = [smarts, 'c_'+typename]
         for idx, [smarts, typename] in enumerate(self.basetypes):
             self.basetypes[idx] = [smarts, 'c_'+typename]
+        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
 
-        # Check if the decorator file is compatible with decorator behavior
-        #if self.decorator_behavior == 'combinatorial-decorators':
-        #    if self.decorators[0][0].find('z')==-1: # not found 'z' - 'z' is necessary for Combinatorial decorator
-        #        raise Exception ("Decorators format not compatible  with decorator behavior option.")
-        #else:
-        #    if self.decorators[0][0].find('z')!=-1: # found 'z' - 'z' cannot be in Simple decorator
-        #        raise Exception ("Decorators format not compatible  with decorator behavior option.")
-        
-        # Store a copy of the basetypes, as these (and only these) are allowed
-        # to end up with zero occupancy
-        # commenting out this line, basetypes are now a separate file and are parsed above
-        # self.basetypes = copy.deepcopy(self.atomtypes)
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
@@ -568,7 +555,6 @@ class AtomTypeSampler(object):
                     # Store this atomtype to speed up future rejections
                     self.atomtypes_with_no_matches.add(proposed_atomtype)
                 # Reject if parent type is now unused, UNLESS it is a base type
-                print(proposed_atom_typecounts) #DEBUG
                 if (proposed_atom_typecounts[atom1typename] == 0) and (atom1smarts not in self.basetypes_smarts):
                     # Reject because new type is unused in dataset.
                     if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atomtype, atomtype_typename))
