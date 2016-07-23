@@ -492,6 +492,8 @@ class AtomTypeSampler(object):
             
                 # Update proposed parent dictionary
                 proposed_parents[atomtype].append([proposed_atomtype, proposed_typename])
+                # Hack to make naming consistent with below
+                atom1smarts, atom1typename = atomtype, atomtype_typename
 
             else:
                 # combinatorial-decorators
@@ -523,7 +525,6 @@ class AtomTypeSampler(object):
                         proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type, first_alpha = True)
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
 
-                #if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
 
                 # Update proposed parent dictionary
                 proposed_parents[atom1type[0]].append([proposed_atomtype, proposed_typename])
@@ -567,7 +568,8 @@ class AtomTypeSampler(object):
                     # Store this atomtype to speed up future rejections
                     self.atomtypes_with_no_matches.add(proposed_atomtype)
                 # Reject if parent type is now unused, UNLESS it is a base type
-                if (proposed_atom_typecounts[atom1typename] == 0) and (atomtype not in self.basetypes_smarts):
+                print(proposed_atom_typecounts) #DEBUG
+                if (proposed_atom_typecounts[atom1typename] == 0) and (atom1smarts not in self.basetypes_smarts):
                     # Reject because new type is unused in dataset.
                     if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atomtype, atomtype_typename))
                     valid_proposal = False
