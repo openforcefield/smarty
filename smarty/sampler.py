@@ -603,10 +603,10 @@ class AtomTypeSampler(object):
                     # Store this atomtype to speed up future rejections
                     self.atomtypes_with_no_matches.add(proposed_atomtype)
                 # Reject if parent type is now unused, UNLESS it is a base type
-                #if (proposed_atom_typecounts[atomtype_typename] == 0) and (atomtype not in self.basetypes_smarts):
-                #    # Reject because new type is unused in dataset.
-                #    if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atomtype, atomtype_typename))
-                #    valid_proposal = False
+                if (proposed_atom_typecounts[atomtype_typename] == 0) and (atomtype not in self.basetypes_smarts):
+                    # Reject because new type is unused in dataset.
+                    if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atomtype, atomtype_typename))
+                    valid_proposal = False
             except AtomTyper.TypingException as e:
                 print("Exception: %s" % str(e))
                 # Reject since typing failed.
