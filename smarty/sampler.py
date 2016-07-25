@@ -847,11 +847,11 @@ class AtomTypeSampler(object):
             f.writelines(start + self.traj)
             f.close()
  
-       # Get/print some stats on trajectory
-       # Load timeseries
-        timeseries = load_trajectory( trajFile )
-        time_fractions = scores_vs_time( timeseries )
-        print("Maximum score achieved: %.2f" % max(time_fractions['all']))
+            # Get/print some stats on trajectory
+            # Load timeseries
+            timeseries = load_trajectory( trajFile )
+            time_fractions = scores_vs_time( timeseries )
+            print("Maximum score achieved: %.2f" % max(time_fractions['all']))
 
         # If desired, make plot
         if plotFile:
