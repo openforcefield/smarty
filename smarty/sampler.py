@@ -46,6 +46,8 @@ import networkx
 import time
 
 from . import AtomTyper
+from score_utils import load_trajectory
+from score_utils import scores_vs_time
 
 #=============================================================================================
 # ATOMTYPE SAMPLER
@@ -779,7 +781,7 @@ class AtomTypeSampler(object):
                 self.print_parent_tree(new_roots, start+'\t')
 
 
-    def run(self, niterations, trajFile=None):
+    def run(self, niterations, trajFile=None, plotFile=None):
         """
         Run atomtype sampler for the specified number of iterations.
 
@@ -789,6 +791,8 @@ class AtomTypeSampler(object):
             The specified number of iterations
         trajFile : str, optional, default=None
             Output trajectory filename
+        plotFile : str, optional, default=None
+            Filename for output of plot of score versus time
 
         Returns
         ----------
@@ -842,6 +846,45 @@ class AtomTypeSampler(object):
             start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
             f.writelines(start + self.traj)
             f.close()
+ 
+            # Get/print some stats on trajectory
+            # Load timeseries
+            timeseries = load_trajectory( trajFile )
+            time_fractions = scores_vs_time( timeseries )
+            print("Maximum score achieved: %.2f" % max(time_fractions['all']))
+
+        # If desired, make plot
+        if plotFile:
+            import pylab as pl
+            if not trajFile:
+                raise Exception("Cannot construct plot of trajectory without a trajectory file.")
+            # Load timeseries
+            timeseries = load_trajectory( trajFile )
+            time_fractions = scores_vs_time( timeseries )
+
+            # Plot overall score
+            pl.plot( time_fractions['all'], 'k-', linewidth=2.0)
+
+            # Grab reference types other than 'all'
+            plot_others = False
+            if plot_others:
+                reftypes = time_fractions.keys()
+                reftypes.remove('all')
+
+                # Plot scores for individual types
+                for reftype in reftypes:
+                    pl.plot( time_fractions[reftype] )
+            
+            # Axis labels and legend
+            pl.xlabel('Iteration')
+            pl.ylabel('Fraction of reference type found')
+            if plot_others:
+                pl.legend(['all']+reftypes, loc="lower right")
+            pl.ylim(-0.1, 1.1)
+
+            # Save
+            pl.savefig( plotFile )
+
 
         #Compute final type stats
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
