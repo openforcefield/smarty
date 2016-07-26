@@ -373,7 +373,6 @@ class AtomTypeSampler(object):
         else:
             # Add the new alpha at the end
             proposed_atomtype = atom1type[0][:len(atom1type[0])-1] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
-            #print " #### More ALPHA: " + str(proposed_atomtype)
         proposed_typename = atom1type[1] + ' ' + bondset[1] + ' ' + atom2type[1] + ' '
         return proposed_atomtype, proposed_typename
 
@@ -398,14 +397,12 @@ class AtomTypeSampler(object):
         number_brackets = 0
         # find closed alpha atom
         closeAlpha = atom1type[0].find(']')
-
         # This has two atoms (already has an alpha atom)
         if count == 2: 
             proposed_atomtype = atom1type[0][:closeAlpha+1]
             proposed_atomtype += bondset[0] + atom2type[0] + ')]'
             proposed_typename = atom1type[1] + bondset[1] + ' ' + atom2type[1]
             if self.verbose: print("ADD FIRST BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
-
         elif count > 2:
             # Has an alpha atom with at least 1 beta atom
             proposed_atomtype = atom1type[0][:closeAlpha+1]
@@ -413,7 +410,6 @@ class AtomTypeSampler(object):
             proposed_atomtype += atom1type[0][closeAlpha+1:]
             proposed_typename = atom1type[1] + ' (' + bondset[1] + ' ' + atom2type[1] + ')'
             if self.verbose: print("ADD MORE BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
-
         else:
             # Has only 1 atom which means there isn't an alpha atom yet, add an alpha atom instead
             proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondset, atom2type) 
@@ -432,7 +428,6 @@ class AtomTypeSampler(object):
         natomtypes = len(proposed_atomtypes)
         ndecorators = len(self.decorators)
         natombasetypes = len(self.atom_basetype)
-        #proposed_basetypes = copy.deepcopy(self.atom_basetype)
 
         valid_proposal = True
 
@@ -518,7 +513,6 @@ class AtomTypeSampler(object):
                 # Update proposed parent dictionary
                 proposed_parents[atom1type[0]].append([proposed_atomtype, proposed_typename])
 
-
             proposed_parents[proposed_atomtype] = []
 
             # Check that we haven't already determined this atom type isn't matched in the dataset.
@@ -534,14 +528,11 @@ class AtomTypeSampler(object):
                 if self.verbose: print("Atom type already exists; rejecting to avoid duplication.")
                 valid_proposal = False
             
-
             # Check for valid proposal before proceeding.
             if not valid_proposal:
                 return False
 
             # Insert atomtype immediately after.
-            #atomtype_index = random.randint(0, natomtypes-1) # Temporary: Because its not using atomtypes already created, random insertion
-            #proposed_atomtypes.insert(atomtype_index+1, [proposed_atomtype, proposed_typename])
             proposed_atomtypes.insert(natomtypes, [proposed_atomtype, proposed_typename]) # Insert in the end (hierarchy issue)
             # Try to type all molecules.
             try:
