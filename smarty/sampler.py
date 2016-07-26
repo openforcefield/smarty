@@ -12,8 +12,7 @@ Example illustrating a scheme to create and destroy atom types automatically usi
 AUTHORS
 
 John Chodera <john.chodera@choderalab.org>, Memorial Sloan Kettering Cancer Center.
-Additional contributions from the Mobley lab, UC Irvine, including David Mobley
-and Caitlin Bannan.
+Additional contributions from the Mobley lab, UC Irvine, including David Mobley, Caitlin Bannan, and Camila Zanette.
 
 The AtomTyper class is based on 'patty' by Pat Walters, Vertex Pharmaceuticals.
 
@@ -47,6 +46,8 @@ import networkx
 import time
 
 from . import AtomTyper
+from score_utils import load_trajectory
+from score_utils import scores_vs_time
 
 #=============================================================================================
 # ATOMTYPE SAMPLER
@@ -95,9 +96,11 @@ class AtomTypeSampler(object):
         # Define internal typing tag.
         self.typetag = 'atomtype'
 
+        # Save bond list to use throughout
+        self.bondset = [("-","simply"), ("=", "doubly"), ("#","triply"), (":", "aromatic"), ("~","any")]
+
         # Read atomtypes (initial and base) and decorators.
         self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
-        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
         self.basetypes = AtomTyper.read_typelist(basetypes_filename)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
@@ -107,19 +110,8 @@ class AtomTypeSampler(object):
             self.atomtypes[idx] = [smarts, 'c_'+typename]
         for idx, [smarts, typename] in enumerate(self.basetypes):
             self.basetypes[idx] = [smarts, 'c_'+typename]
+        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
 
-        # Check if the decorator file is compatible with decorator behavior
-        if self.decorator_behavior == 'combinatorial-decorators':
-            if self.decorators[0][0].find('z')==-1: # not found 'z' - 'z' is necessary for Combinatorial decorator
-                raise Exception ("Decorators format not compatible  with decorator behavior option.")
-        else:
-            if self.decorators[0][0].find('z')!=-1: # found 'z' - 'z' cannot be in Simple decorator
-                raise Exception ("Decorators format not compatible  with decorator behavior option.")
-        
-        # Store a copy of the basetypes, as these (and only these) are allowed
-        # to end up with zero occupancy
-        # commenting out this line, basetypes are now a separate file and are parsed above
-        # self.basetypes = copy.deepcopy(self.atomtypes)
         # Store smarts for basetypes
         self.basetypes_smarts = [ smarts for (smarts, name) in self.basetypes ]
 
@@ -250,9 +242,7 @@ class AtomTypeSampler(object):
 
         # Get current atomtypes and reference atom types
         current_atomtypes = [ typename for (smarts, typename) in atomtypes ]
-        print "************ current_atomtype: " + str(current_atomtypes) + " **************************"
         reference_atomtypes = [ typename for typename in self.reference_atomtypes ]
-        print "************ reference_atomtype: " + str(reference_atomtypes) + " **************************"
         # check that current atom types are not in reference atom types
         if set(current_atomtypes) & set(reference_atomtypes):
             raise Exception("Current and reference atom types must be unique")
@@ -274,9 +264,7 @@ class AtomTypeSampler(object):
                 atoms_in_common[(current_atomtype,reference_atomtype)] += 1
         for current_atomtype in current_atomtypes:
             for reference_atomtype in reference_atomtypes:
-                #print "CURRENT AND REFERENCE ATOMTYPE: " + str(current_atomtype) + " " + str(reference_atomtype)
                 weight = atoms_in_common[(current_atomtype,reference_atomtype)]
-                #print weight
                 graph.add_edge(current_atomtype, reference_atomtype, weight=weight)
         elapsed_time = time.time() - initial_time
         if self.verbose: print('Graph creation took %.3f s' % elapsed_time)
@@ -330,8 +318,109 @@ class AtomTypeSampler(object):
         print('%d / %d total atoms match (%.3f %%)' % (total_atom_type_matches, self.total_atoms, fraction_matched_atoms * 100))
 
         return fraction_matched_atoms
+    
+    
+    def AtomDecorator(self, atom1type, decorator):
+        """
+        Given an atom and a decorator ammend the SMARTS string with that decorator 
+        Returns at "atom" which is a tuple of [SMARTS, typeName] for the decorated atom
+        """
+        if self.HasAlpha(atom1type):
+            # decorators should go before the $ sign on the atom
+            dollar = atom1type[0].find('$')
+            proposed_atomtype = atom1type[0][:dollar] + decorator[0] + atom3[0][dollar:]
+            proposed_typename = atom1type[1] + ' ' + decorator[1]
+        else:
+            # No alpha atom so the decorator goes before the ']'
+            proposed_atomtype = atom1type[0][:-1] + decorator[0] + ']'
+            proposed_typename = atom1type[1] + ' '  + decorator[1]
+        return proposed_atomtype, proposed_typename
 
-    def sample_atomtypes(self):
+    def PickAnAtom(self, atomList):
+        """
+        takes a desired current set of atomtypes (current, base, populated base, or some combination of the 
+        above or something else) and pick one at random. (Here, we will typically but perhaps not always want 
+        to use currently populated atomtypes, i.e. the atomtypes list, not basetypes (generic types) or 
+        used_basetypes (base types which type anything)). A little silly, but still helpful. 
+        Returns a tuple corresponding to the selected (smarts, name).
+        """
+        atomtype_index = random.randint(0, len(atomList)-1)
+        return atomList[atomtype_index]
+
+    def HasAlpha(self, atom1type):
+        """
+        Takes a specified atomtype tuple (smarts, name) and determines whether or not it already has an alpha 
+        substituent, returning True or False.
+        """
+        if atom1type[0].find("$") != -1:
+            return True
+        else:
+            return False
+
+    def AddAlphaSubstituentAtom(self, atom1type, bondset, atom2type, first_alpha):
+        """
+        Takes specified atomtypes atom1type and atom2type (where atom1type is a type without an alpha substituent), 
+        and a specified bond set, and introduces an alpha substituent involving atom2type (which can be a decorated 
+        type such as output by AtomDecorator); returns a tuple of (smarts, name) from the result. Example output 
+        for input of atom1type=("[#1]", "hydrogen"), bondset = (['-'], "single"), and atom2type = ("[#6]" is 
+        ("[#1$(*-[#6])]", "hydrogen singly bonded to carbon") or something along those lines. This should basically 
+        just be adding $(*zw) where z is the selected bond type and w is atom2type. It should raise an exception 
+        if an alpha substituent is attempted to be added to an atom1type which already has an alpha substituent.
+        """
+        if first_alpha:
+            result = re.match('\[(.+)\]', atom1type[0])
+            proposed_atomtype = '[' + result.groups(1)[0] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
+        else:
+            # Add the new alpha at the end
+            proposed_atomtype = atom1type[0][:len(atom1type[0])-1] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
+            #print " #### More ALPHA: " + str(proposed_atomtype)
+        proposed_typename = atom1type[1] + ' ' + bondset[1] + ' ' + atom2type[1] + ' '
+        return proposed_atomtype, proposed_typename
+
+    def AddBetaSubstituentAtom(self, atom1type, bondset, atom2type):
+        """
+        Takes specified atomtypes atom1type and atom2type (where atom1type is a type WITH an alpha substituent), 
+        and a specified bond set, and introduces an alpha substituent involving atom2type (which can be a 
+        decorated type such as output by AtomDecorator); returns a tuple of (smarts, name) from the result. 
+        Example output for input of atom1type=("[#1$(*-[#6])]", "hydrogen singly bonded to carbon"), 
+        bondset = (['-'], "single"), and atom2type = ("[#8]" is ("[#1$(*-[#6]-[#8])]", "hydrogen singly bonded 
+        to (carbon singly bonded to oxygen)") or something along those lines. This will have to handle two cases 
+        separately -- addition of the first beta substituent (where it is inserted between the characters (] and 
+        is inserted without parens), and addition of subsequent beta substituents (where it is inserted after 
+        the first set of [] in the substituent and is inserted enclosed in parens, i.e. (-[w]).) It should raise 
+        an exception if a beta substituent is attempted to be added to an atom1type which does not have an alpha 
+        substituent.
+        """
+
+        # counting '[' tells us how many atoms are in the mix
+        count = atom1type[0].count('[')
+        proposed_atomtype = ""
+        number_brackets = 0
+        # find closed alpha atom
+        closeAlpha = atom1type[0].find(']')
+
+        # This has two atoms (already has an alpha atom)
+        if count == 2: 
+            proposed_atomtype = atom1type[0][:closeAlpha+1]
+            proposed_atomtype += bondset[0] + atom2type[0] + ')]'
+            proposed_typename = atom1type[1] + bondset[1] + ' ' + atom2type[1]
+            if self.verbose: print("ADD FIRST BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
+
+        elif count > 2:
+            # Has an alpha atom with at least 1 beta atom
+            proposed_atomtype = atom1type[0][:closeAlpha+1]
+            proposed_atomtype += '(' + bondset[0] + atom2type[0] + ')'
+            proposed_atomtype += atom1type[0][closeAlpha+1:]
+            proposed_typename = atom1type[1] + ' (' + bondset[1] + ' ' + atom2type[1] + ')'
+            if self.verbose: print("ADD MORE BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
+
+        else:
+            # Has only 1 atom which means there isn't an alpha atom yet, add an alpha atom instead
+            proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondset, atom2type) 
+        return proposed_atomtype, proposed_typename
+
+
+    def sample_atomtypes(self): 
         """
         Perform one step of atom type sampling.
 
@@ -392,105 +481,43 @@ class AtomTypeSampler(object):
             
                 # Update proposed parent dictionary
                 proposed_parents[atomtype].append([proposed_atomtype, proposed_typename])
+                # Hack to make naming consistent with below
+                atom1smarts, atom1typename = atomtype, atomtype_typename
 
             else:
                 # combinatorial-decorators
-                number_decorators = random.randint(1,3)
-                print "number of decorator= " + str(number_decorators)
-                # Pick a decorator and a basetype
-                decorator_index = random.randint(0, ndecorators-1)
-                (decorator, decorator_typename) = self.decorators[decorator_index]
-                basetype_index = random.randint(0, natombasetypes-1)
-                (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                original_basetype = basetype
-                if number_decorators == 1:
-                    # One or Two atom type and one decorator
-                    print "ONE DECORATOR"
-                    if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                        # There is a bond - two atom types
-                        result = re.match('\[(.+)\]', basetype)
-                        basetype_index = random.randint(0, natombasetypes-1)
-                        (basetype, basetype_typename2) = self.atom_basetype[basetype_index]
-                        new_dec = decorator.replace("z", basetype)
-                        proposed_atomtype = '[' + result.groups(1)[0] + new_dec + ']'
-                        proposed_typename = basetype_typename2 + ' ' + basetype_typename +  ' ' + decorator_typename
-                    else:
-                        # Only one atom type
-                        result = re.match('\[(.+)\]', basetype)
-                        proposed_atomtype = '[' + result.groups(1)[0] + decorator + ']'
-                        proposed_typename = basetype_typename + ' ' + decorator_typename
-                elif number_decorators == 2:
-                    print "TWO DECORATORS"
-                    # Two atom types and two decorator
-                    idx = 0
-                    proposed_typename = ''
-                    proposed_atomtype = ''
-                    result = re.match('\[(.+)\]', basetype)
-                    proposed_atomtype += result.groups(1)[0]
-                    proposed_typename += basetype_typename + ' '
-                    while idx < 2:
-                        decorator_index = random.randint(0, ndecorators-1)
-                        (decorator, decorator_typename) = self.decorators[decorator_index]
-                        print decorator
-                        if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                            basetype_index = random.randint(0, natombasetypes-1)
-                            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                            new_dec = decorator.replace("z", basetype)
-                            proposed_typename += basetype_typename + ' ' + decorator_typename + ' '
-                        else:
-                            new_dec = decorator
-                            proposed_typename += decorator_typename + ' '
-                        proposed_atomtype += new_dec
-                        print proposed_atomtype
-                        idx += 1
-                    proposed_atomtype = '[' + proposed_atomtype + ']'
+                nbondset = len(self.bondset)
+                # Pick an atomtype
+                atom1type = self.PickAnAtom(self.unmatched_atomtypes)
+                atom1smarts, atom1typename = atom1type
+                # Check if we need to add an alfa or beta substituent
+                if self.HasAlpha(atom1type):
+                    # Has alpha
+                    bondset_index = random.randint(0, nbondset-1)
+                    atom2type = self.PickAnAtom(self.used_basetypes)
+                    if random.random() < 0.5 or atom1type[0][2] == '1': # Add Beta Substituent Atom randomly or when it is Hydrogen
+                        proposed_atomtype, proposed_typename = self.AddBetaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type)
+                    else: # Add another Alpha Substituent if it is not a Hydrogen
+                        proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type, first_alpha = False)
+                    if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                 else:
-                    print "THREE DECORATORS"
-                    # Two atom types and three decorator
-                    idx = 0
-                    proposed_typename = ''
-                    proposed_atomtype = ''
-                    n_basetype = 1
-                    decorator_bonds = 0
-                    result = re.match('\[(.+)\]', basetype)
-                    proposed_atomtype += result.groups(1)[0]
-                    proposed_typename += basetype_typename + ' '
-                    while idx < 3:
+                    # Has no alpha
+                    if random.random() < 0.5:
+                        # Add a no-bond decorator
                         decorator_index = random.randint(0, ndecorators-1)
-                        (decorator, decorator_typename) = self.decorators[decorator_index]
-                        while decorator in proposed_atomtype: # Check if you already have that decorator to the base atom
-                            decorator_index = random.randint(0, ndecorators-1)
-                            (decorator, decorator_typename) = self.decorators[decorator_index]
-                        if re.match('\$\(\*[=~:\-#](\w+)\)', decorator) != None:
-                            basetype_index = random.randint(0, natombasetypes-1)
-                            (basetype, basetype_typename) = self.atom_basetype[basetype_index]
-                            new_dec = decorator.replace("z", basetype)
-                            n_basetype += 1
-                            decorator_bonds += 1
-                            if decorator_bonds > 1:
-                                # Can either decorate the main atom type or another atom bonded to the main atom type
-                                if random.random() < 0.5:
-                                    # Add decorator to another decorator
-                                    new_dec = new_dec + ')'
-                                    new_dec = re.sub('\)', new_dec, proposed_atomtype) # Sub parentheses to the new decorator
-                                    print "*** Proposed atom type after add a decorator to another decorator: " + str(new_dec)
-                                    proposed_atomtype = new_dec
-                                else:
-                                    proposed_atomtype += new_dec
-                            else:
-                                proposed_atomtype += new_dec
-                            proposed_typename += basetype_typename + ' ' + decorator_typename + ' '
-                        else:
-                            new_dec = decorator
-                            proposed_atomtype += new_dec
-                            proposed_typename += decorator_typename + ' '
-                        idx += 1
-                    proposed_atomtype = '[' + proposed_atomtype + ']'
+                        decorator = self.decorators[decorator_index]
+                        proposed_atomtype, proposed_typename = self.AtomDecorator(atom1type, decorator)
+                        if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], decorator[0], decorator[1], proposed_atomtype, proposed_typename))
+                    else:
+                        bondset_index = random.randint(0, nbondset-1)
+                        atom2type = self.PickAnAtom(self.used_basetypes)
+                        proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type, first_alpha = True)
+                        if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
 
-                if self.verbose: print("Attempting to create new subtype:  -> '%s' (%s)" % ( proposed_atomtype, proposed_typename))
 
                 # Update proposed parent dictionary
-                proposed_parents[original_basetype].append([proposed_atomtype, proposed_typename])
+                proposed_parents[atom1type[0]].append([proposed_atomtype, proposed_typename])
+
 
             proposed_parents[proposed_atomtype] = []
 
@@ -506,14 +533,16 @@ class AtomTypeSampler(object):
             if proposed_atomtype in existing_atomtypes:
                 if self.verbose: print("Atom type already exists; rejecting to avoid duplication.")
                 valid_proposal = False
+            
 
             # Check for valid proposal before proceeding.
             if not valid_proposal:
                 return False
 
             # Insert atomtype immediately after.
-            atomtype_index = random.randint(0, natomtypes-1) # Temporary: Because its not using atomtypes already created, random insertion
-            proposed_atomtypes.insert(atomtype_index+1, [proposed_atomtype, proposed_typename])
+            #atomtype_index = random.randint(0, natomtypes-1) # Temporary: Because its not using atomtypes already created, random insertion
+            #proposed_atomtypes.insert(atomtype_index+1, [proposed_atomtype, proposed_typename])
+            proposed_atomtypes.insert(natomtypes, [proposed_atomtype, proposed_typename]) # Insert in the end (hierarchy issue)
             # Try to type all molecules.
             try:
                 # Type molecules.
@@ -528,10 +557,10 @@ class AtomTypeSampler(object):
                     # Store this atomtype to speed up future rejections
                     self.atomtypes_with_no_matches.add(proposed_atomtype)
                 # Reject if parent type is now unused, UNLESS it is a base type
-                #if (proposed_atom_typecounts[atomtype_typename] == 0) and (atomtype not in self.basetypes_smarts):
-                #    # Reject because new type is unused in dataset.
-                #    if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atomtype, atomtype_typename))
-                #    valid_proposal = False
+                if (proposed_atom_typecounts[atom1typename] == 0) and (atom1smarts not in self.basetypes_smarts):
+                    # Reject because new type is unused in dataset.
+                    if self.verbose: print("Parent type '%s' (%s) now unused in dataset; rejecting." % (atom1smarts, atom1typename))
+                    valid_proposal = False
             except AtomTyper.TypingException as e:
                 print("Exception: %s" % str(e))
                 # Reject since typing failed.
@@ -752,7 +781,7 @@ class AtomTypeSampler(object):
                 self.print_parent_tree(new_roots, start+'\t')
 
 
-    def run(self, niterations, trajFile=None):
+    def run(self, niterations, trajFile=None, plotFile=None):
         """
         Run atomtype sampler for the specified number of iterations.
 
@@ -762,6 +791,8 @@ class AtomTypeSampler(object):
             The specified number of iterations
         trajFile : str, optional, default=None
             Output trajectory filename
+        plotFile : str, optional, default=None
+            Filename for output of plot of score versus time
 
         Returns
         ----------
@@ -815,6 +846,45 @@ class AtomTypeSampler(object):
             start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
             f.writelines(start + self.traj)
             f.close()
+ 
+            # Get/print some stats on trajectory
+            # Load timeseries
+            timeseries = load_trajectory( trajFile )
+            time_fractions = scores_vs_time( timeseries )
+            print("Maximum score achieved: %.2f" % max(time_fractions['all']))
+
+        # If desired, make plot
+        if plotFile:
+            import pylab as pl
+            if not trajFile:
+                raise Exception("Cannot construct plot of trajectory without a trajectory file.")
+            # Load timeseries
+            timeseries = load_trajectory( trajFile )
+            time_fractions = scores_vs_time( timeseries )
+
+            # Plot overall score
+            pl.plot( time_fractions['all'], 'k-', linewidth=2.0)
+
+            # Grab reference types other than 'all'
+            plot_others = False
+            if plot_others:
+                reftypes = time_fractions.keys()
+                reftypes.remove('all')
+
+                # Plot scores for individual types
+                for reftype in reftypes:
+                    pl.plot( time_fractions[reftype] )
+            
+            # Axis labels and legend
+            pl.xlabel('Iteration')
+            pl.ylabel('Fraction of reference type found')
+            if plot_others:
+                pl.legend(['all']+reftypes, loc="lower right")
+            pl.ylim(-0.1, 1.1)
+
+            # Save
+            pl.savefig( plotFile )
+
 
         #Compute final type stats
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
