@@ -24,7 +24,7 @@ class TestAtomTypeSampler(TestCase):
         # types
         basetypes_filename = get_data_filename('atomtypes/basetypes.smarts')
         initialtypes_filename = get_data_filename('atomtypes/initial_AlkEthOH.smarts')
-        decorators_filename = get_data_filename('atomtypes/decorators-combinatorial.smarts')
+        decorators_filename = get_data_filename('atomtypes/new-decorators.smarts')
         replacements_filename = get_data_filename('atomtypes/replacements.smarts')
         molecules = smarty.utils.read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_tripos.mol2'), verbose=False)
         reference_typed_molecules = smarty.utils.read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_ff.mol2'), verbose=False)
