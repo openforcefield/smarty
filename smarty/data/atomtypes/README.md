@@ -80,4 +80,5 @@ The [`OESmartsLexReplace`](http://docs.eyesopen.com/toolkits/python/oechemtk/OEC
 * `basetypes.smarts` - basetypes file with more sophisticated atom types
 * `decorators.smarts` - `decorators` file with a variety of decorators
 * `decorators-simple.smarts` - minimal `decorators` file for testing
+* `new-decorators.smarts` - decorators file without bond information (new modular framework)
 * `substitutions.smarts` - minimal `substitutions` file
