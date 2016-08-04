@@ -242,7 +242,9 @@ class AtomTypeSampler(object):
 
         # Get current atomtypes and reference atom types
         current_atomtypes = [ typename for (smarts, typename) in atomtypes ]
+        print current_atomtypes
         reference_atomtypes = [ typename for typename in self.reference_atomtypes ]
+        print reference_atomtypes
         # check that current atom types are not in reference atom types
         if set(current_atomtypes) & set(reference_atomtypes):
             raise Exception("Current and reference atom types must be unique")
@@ -261,7 +263,8 @@ class AtomTypeSampler(object):
             for (current_typed_atom, reference_typed_atom) in zip(current_typed_molecule.GetAtoms(), reference_typed_molecule.GetAtoms()):
                 current_atomtype = current_typed_atom.GetStringData(self.typetag)
                 reference_atomtype = reference_typed_atom.GetType()
-                atoms_in_common[(current_atomtype,reference_atomtype)] += 1
+                if (current_atomtype,reference_atomtype) in atoms_in_common.keys():
+                    atoms_in_common[(current_atomtype,reference_atomtype)] += 1
         for current_atomtype in current_atomtypes:
             for reference_atomtype in reference_atomtypes:
                 weight = atoms_in_common[(current_atomtype,reference_atomtype)]
@@ -430,7 +433,9 @@ class AtomTypeSampler(object):
         natombasetypes = len(self.atom_basetype)
 
         valid_proposal = True
-
+        
+        creating = False
+        
         if random.random() < 0.5:
             # Pick an atom type to destroy.
             atomtype_index = random.randint(0, natomtypes-1)
@@ -461,6 +466,7 @@ class AtomTypeSampler(object):
                 if self.verbose: print("Typing failed; rejecting.")
                 valid_proposal = False
         else:
+            creating = True
             if self.decorator_behavior == 'simple-decorators':
                 # Pick an atomtype to subtype.
                 atomtype_index = random.randint(0, natomtypes-1)
@@ -508,7 +514,6 @@ class AtomTypeSampler(object):
                         atom2type = self.PickAnAtom(self.used_basetypes)
                         proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type, first_alpha = True)
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
-
 
                 # Update proposed parent dictionary
                 proposed_parents[atom1type[0]].append([proposed_atomtype, proposed_typename])
@@ -564,6 +569,36 @@ class AtomTypeSampler(object):
 
         if self.verbose: print('Proposal is valid...')
 
+
+        # IF is creating a new atom type
+        if creating:
+    
+            # Get the Element we are creating
+            element = re.findall('\d+', proposed_atomtype)[0]
+            if self.verbose: print("****** Calculating only for element '%s'." % element)
+            # Create proposed atomtypes by element
+            proposed_atomtype_by_element = []
+            for atomt in proposed_atomtypes:
+                if re.findall('\d+', atomt[0])[0] == element:
+                    proposed_atomtype_by_element += [atomt]
+            print proposed_atomtype_by_element
+            print proposed_atomtypes
+                
+            # Get only the element atomtypes form the Total Atoms
+            total_atom_type_element = []
+            for total_atomt in self.atomtypes:
+                if re.findall('\d+', total_atomt[0])[0] == element:
+                    total_atom_type_element += [total_atomt]
+            print total_atom_type_element
+                        #self.type_molecules(proposed_atomtype_by_element, self.molecules)
+            if self.verbose: print("****** GRAPH for atual atomtypes that are related with element %s." % (element))
+            [self.atom_type_matches, self.total_atom_type_matches] = self.best_match_reference_types(total_atom_type_element, self.molecules)
+            if self.verbose: print("****** GRAPH for proposed atomtypes that are related with element %s" % (element))
+            (proposed_atom_type_matches, proposed_total_atom_type_matches) = self.best_match_reference_types(proposed_atomtype_by_element, proposed_molecules)
+        else:
+            (proposed_atom_type_matches, proposed_total_atom_type_matches) = self.best_match_reference_types(proposed_atomtypes, proposed_molecules)
+
+
         # Accept automatically if no reference molecules
         accept = False
         if self.reference_typed_molecules is None:
@@ -576,7 +611,7 @@ class AtomTypeSampler(object):
                 effective_temperature = (self.total_atoms * self.temperature)
 
             # Compute likelihood for accept/reject
-            (proposed_atom_type_matches, proposed_total_atom_type_matches) = self.best_match_reference_types(proposed_atomtypes, proposed_molecules)
+            #(proposed_atom_type_matches, proposed_total_atom_type_matches) = self.best_match_reference_types(proposed_atomtypes, proposed_molecules)
             log_P_accept = (proposed_total_atom_type_matches - self.total_atom_type_matches) / effective_temperature
             print('Proposal score: %d >> %d : log_P_accept = %.5e' % (self.total_atom_type_matches, proposed_total_atom_type_matches, log_P_accept))
             if (log_P_accept > 0.0) or (numpy.random.uniform() < numpy.exp(log_P_accept)):
@@ -587,10 +622,12 @@ class AtomTypeSampler(object):
             self.atomtypes = proposed_atomtypes
             self.molecules = proposed_molecules
             self.parents = proposed_parents
+            (proposed_atom_type_matches, proposed_total_atom_type_matches) = self.best_match_reference_types(proposed_atomtypes, proposed_molecules)
             self.atom_type_matches = proposed_atom_type_matches
             self.total_atom_type_matches = proposed_total_atom_type_matches
             return True
         else:
+            [self.atom_type_matches, self.total_atom_type_matches] = self.best_match_reference_types(self.atomtypes, self.molecules)
             return False
 
     def type_molecules(self, typelist, molecules):
