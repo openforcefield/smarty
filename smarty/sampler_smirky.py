@@ -76,7 +76,7 @@ class TypeSampler(object):
     """
     SMIRKS sampler for atoms, bonds, angles, torsions, and impropers.
     """
-    def __init__(self, molecules, ORdecorators, ANDdecorators, typetag, initialtypes = None, SMIRFF = None, temperature = 0.1, verbose = False):
+    def __init__(self, molecules, elementList, ORdecorators, ANDdecorators, typetag, initialtypes = None, SMIRFF = None, temperature = 0.1, verbose = False):
         # TODO: determine if initial types can be base types or if that needs to be handled as a second optional input
         # TODO: bond OR and ANDS this list is much shorter, but I'm not sure how to implement it
         """
@@ -90,6 +90,8 @@ class TypeSampler(object):
         typetag : string, required
             Must be one of these: 'Bond', 'Angle', 'Torsion', 'Improper', 'VdW'
             'VdW' is for single labeled atom
+        elementList : list of strings, required
+            List of elements or combined elements 
         ORdecorators: list of strings, required
             List of decorators that can be combined directly with an atom
             for example: for [#6X4, #8X2] 'X4' and 'X2' are ORdecorators
@@ -115,11 +117,11 @@ class TypeSampler(object):
         self.ANDdecorators = ANDdecorators
         self.temperature = temperature
         self.SMIRFF = SMIRFF
-
+        
+        if not typetag.lower() in ['bond', 'angle', 'torsion','improper','vdw']:
+            raise Exception("Error typetag %s is not recognized, please use 'Bond', 'Angle', 'Torsion', 'Improper', or 'VdW' ")  
         self.typetag = typetag
         self.forcetype = self.get_force_type(self.typetag)
-        if self.forcetype == None:
-            raise Exception("Error typetag %s is not recognized, please use 'Bond', 'Angle', 'Torsion', 'Improper', or 'VdW' ")  
 
         # Save bond list to use throughout
         self.bondORset = ['-', '=', '#', ':', '!-', '!=', '!#', '!:']
@@ -139,31 +141,25 @@ class TypeSampler(object):
 
         self.typeLabels = []
         for env in self.envList:
-            env.label = _getNewLabel(self.typeLabels)
+            if env.label == None:
+                env.label = _getNewLabel(self.typeLabels)
             self.typeLabels.append(env.label)
 
         # TODO: decide how to handle parent dictionary with environment objects.
 
         # Make typelist to fit method set up
         typelist = [[env.asSMIRKS(), env.label] for env in self.envList]
-        # TODO: rewrite compute_type_statistics and show_type_statistics
-        [typecounts, molecule_typecounts] = self.compute_type_statistics(typelist, self.molecules)
+        [typecounts, molecule_typecounts] = self.compute_type_statistics(typelist)
         if self.verbose: self.show_type_statistics(typelist, typecounts, molecule_typecounts)
 
         # Store elements in the molecules
-        temp_elements = ["[%i]" % i for i in range(1,118)]
         self.elements = []
-        for element in temp_elements:
-            atomcounts = 0 
-            for mol in self.molecules:
-                atomcounts += len(self.get_SMIRKS_matches(mol, element))
 
-            if atomcounts > 0:
-                # remove [ and ] 
-                e = element.replace(']','')
-                e = e.replace('[','')
-                self.elements.append(e)
-                if self.verbose: print("%s is stored in element list there are %s in the molecules" % (element, atomcounts))
+        for element in elementList:
+            # remove [ and ] 
+            e = element.replace(']','')
+            e = e.replace('[','')
+            self.elements.append(e)
 
         
         # Compute total types being sampled 
@@ -175,9 +171,10 @@ class TypeSampler(object):
 
         # Store reference molecules
         # TODO: update how to handle reference molecules
-        self.reference_types = set()
+        self.reference_types = [] 
         self.current_atom_matches = None
-        self.reference_indices = dict()
+        self.reference_typed_molecules = dict()
+        self.reference_typename_dict = dict()
         if self.SMIRFF is not None:
             # get labeler for specified SMIRFF
             self.labeler = ForceField_labeler(get_data_filename(self.SMIRFF))
@@ -187,21 +184,25 @@ class TypeSampler(object):
             # save the type we are considering 
             self.ref_labels = [l[self.forcetype] for l in labels]
 
+            # get smiles to key reference typed molecule dictionary
+            smiles = [OEMolToSmiles(mol) for mol in molecules]
             # Extract list of reference SMIRKS types present in molecules
-            pid_dict = dict()
-            for label_set in self.ref_labels:
-                for (atom_indices, pid, smirks) in label_set:
-                    pid_dict[pid] = smirks 
-            self.reference_types = [[smirks, pid] for pid, smirks in pid_dict.items()] 
-            self.reference_indices = self.get_type_molecule_dictionary(self.reference_types, molecules)
+            for idx, label_set in enumerate(self.ref_labels):
+                smile = smiles[idx]
+                self.reference_typed_molecules[smile] = {}
+                for (indices, pid, smirks) in label_set:
+                    self.reference_typename_dict[pid] = smirks 
+                    self.reference_typed_molecules[smile][tuple(indices)] = pid
+
+            self.reference_types = [[smirks, pid] for pid, smirks in self.reference_typename_dict.items()] 
             # Compute current atom matches
-            [self.type_matches, self.total_type_matches] = self.best_match_reference_types(typelist, self.molecules)
+            [self.type_matches, self.total_type_matches] = self.best_match_reference_types(typelist)
             # Count atom types.
             self.reference_type_counts = { pid : 0 for (smirks, pid) in self.reference_types }
             for label_set in self.ref_labels:
                 for (atom_indices, pid, smirks) in label_set:
                     self.reference_type_counts[pid] += 1
-        
+            if self.verbose: self.show_type_statistics(typelist, typecounts, molecule_typecounts, self.type_matches)
         return
 
     def get_force_type(self, typetag):
@@ -255,14 +256,19 @@ class TypeSampler(object):
 
         Parameters
         ----------
-        mol : an OpenEye molecule object
+        mol : an OpenEye OEMol object
         smirks : a string for the SMIRKS string being parsed
+
+        Returns
+        --------
+        matches: list of tuples
+            atom indices for labeled atom in the smirks
         """
         qmol = OEQMol()
         if not OEParseSmarts(qmol, smirks):
             raise Exception("Error parsing SMIRKS %s" % smirks)
 
-        # Using ValenceDict to take care of symmetry
+        # ValenceDict was written to handle symmetry
         matches = ValenceDict()
 
         # then require non-unique matches
@@ -270,23 +276,22 @@ class TypeSampler(object):
         ss = OESubSearch(qmol)
         
         for match in ss.Match(mol, unique):
-            atom_indices = dict()
+            indices = dict()
             for ma in match.GetAtoms():
                 patMap = ma.pattern.GetMapIdx()
                 # if patMap == 0, then it's an unidexed atom
                 if patMap != 0:
-                    atom_indices[patMap-1] = ma.target.GetIdx()
+                    indices[patMap-1] = ma.target.GetIdx()
 
-            atom_indices = [atom_indices[idx] for idx in range(len(atom_indices))]
-            # Add to matches Valence Dictionary
-            matches[atom_indices] = ''
+            indices = [indices[idx] for idx in range(len(indices))]
+            matches[indices] = '' 
 
         return matches.keys()
 
-    def get_type_molecule_dictionary(self, typelist, molecules):
+    def get_typed_molecules(self, typelist):
         # TODO: write doc string
         typeDict = dict()
-        for mol in molecules:
+        for mol in self.molecules:
             smiles = OEMolToSmiles(mol)
             typeDict[smiles] = {}
             for [smirks, typename] in typelist:
@@ -296,14 +301,13 @@ class TypeSampler(object):
 
         return typeDict
 
-    def best_match_reference_types(self, typelist, molecules):
+    def best_match_reference_types(self, typelist):
         """
         Determine best match for each parameter with reference atom types
 
         Parameters
         ----------
         typelist : list of list with form [smarts, typename]
-        molecules : list of OEMol
 
         Returns
         -------
@@ -333,7 +337,7 @@ class TypeSampler(object):
         if set(current_typenames) & set(reference_typenames):
             raise Exception("Current and reference type names must be unique")
         # Add current types
-        for typpename in current_typenames:
+        for typename in current_typenames:
             graph.add_node(typename, bipartite=0)
         # add reference types
         for typename in reference_typenames:
@@ -344,15 +348,12 @@ class TypeSampler(object):
             for reference_typename in reference_typenames:
                 types_in_common[(current_typename,reference_typename)] = 0
 
-        current_match_dict = self.get_type_molecule_dictionary(typelist, molecules)
+        current_typed_molecules = self.get_typed_molecules(typelist)
 
-        for molecule in molecules:
-            smiles = OEMolToSmiles(molecule)
-            current_matches = current_match_dict[smiles]
-            reference_matches = self.reference_indices[smiles]
-            for current_indices, typename in current_matches.items():
-                if current_indices in reference_matches.keys():
-                    types_in_common[(typename, reference_matches[current_indices])] += 1 
+        for smile, indexDict in current_typed_molecules.items():
+            for indices, current_typename in indexDict.items():
+                reference_typename = self.reference_typed_molecules[smile][indices]
+                types_in_common[(current_typename, reference_typename)] += 1 
 
         for current_typename in current_typenames:
             for reference_typename in reference_typenames:
@@ -384,14 +385,15 @@ class TypeSampler(object):
         if self.verbose:
             print("PROPOSED:")
             # TODO: update show_type_matches
-            self.show_type_matches(type_matches)
+            self.show_type_matches(self.envList, type_matches)
 
         return (type_matches, total_type_matches)
 
-    def show_type_matches(self, type_matches):
+    def show_type_matches(self, envList, type_matches):
         """
         Show pairing of current to reference atom types.
 
+        envList : list of current chemical environments with labels in type_matches
         type_matches : list of (current_typename, reference_typename, counts)
             List of atom type matches.
 
@@ -400,12 +402,22 @@ class TypeSampler(object):
         """
         print('Atom type matches:')
         total_type_matches = 0
+        current_dict = dict()
         for (current_typename, reference_typename, counts) in type_matches:
+            current_dict[current_typename] = (reference_typename, counts)
+
+        for env in envList:
+            current_typename = env.label
+            current_smirks = env.asSMIRKS()
+            (reference_typename, counts) = current_dict[current_typename]
+            current_combo = "%s: %s" % (current_typename, current_smirks)
             if reference_typename is not None:
-                print('%-64s matches %8s : %8d %-10s types matched' % (current_typename, reference_typename, counts, self.typetag))
+                reference_smirks = self.reference_typename_dict[reference_typename]
+                reference_combo = "%s: %s" % (reference_typename, reference_smirks)
+                print('%-64s matches %64s: %8d %-10s types matched' % (current_combo, reference_combo, counts, self.typetag))
                 total_type_matches += counts
             else:
-                print('%-64s         no match' % (current_typename))
+                print('%-64s no match' % (current_combo))
 
         fraction_matched = float(total_type_matches) / float(self.total_types)
         print('%d / %d total %ss match (%.3f %%)' % (total_type_matches, self.total_types, self.typetag, fraction_matched * 100))
@@ -686,14 +698,13 @@ class TypeSampler(object):
         else:
             return False
     
-    def compute_type_statistics(self, typelist, molecules):
+    def compute_type_statistics(self, typelist):
         """
         Compute statistics for numnber of molecules assigned each type.
 
         ARGUMENTS
         ----------
         typelist: list of lists with the form [smarts, typename]
-        molecules : list of OEMols()
 
         RETURNS
         -------
@@ -707,14 +718,16 @@ class TypeSampler(object):
         for [smarts, typename] in typelist:
             typecounts[typename] = 0
             molecule_typecounts[typename] = 0
-
+        
+        typed_molecules = self.get_typed_molecules(typelist)
         # Count number of atoms with each type.
-        for molecule in molecules:
-            for [smarts, typename] in typelist:
-                matches = self.get_SMIRKS_matches(molecule, smarts)
-                typecounts[typename] += len(matches)
-                if len(matches) > 0:
-                    molecule_typecounts[typename] += 1
+        for molecule, indexDict in typed_molecules.items():
+            typenames_in_molecule = set()
+            for indices, typename in indexDict.items():
+                typecounts[typename] += 1
+                typenames_in_molecule.add(typename)
+            for typename in typenames_in_molecule:
+                molecule_typecounts[typename] += 1
                 
         return (typecounts, molecule_typecounts)
 
@@ -734,22 +747,24 @@ class TypeSampler(object):
 
         # Print header
         if type_matches is not None:
-            print "%5s   %10sS %10s   %15s %32s %8s %46s" % ('INDEX', self.typetag.upper(), 'MOLECULES', 'TYPE NAME', 'SMARTS', 'REF TYPE', 'FRACTION OF REF TYPED MOLECULES MATCHED')
+            print "%5s   %10sS %10s   %-50s %-50s %30s" % ('INDEX', self.typetag.upper(), 'MOLECULES', 'TYPE NAME: SMIRKS', 'REF TYPE: SMIRKS', 'FRACTION OF REF TYPED MOLECULES MATCHED')
         else:
-            print "%5s   %10sS %10s   %15s %32s" % ('INDEX', self.typetag.upper(), 'MOLECULES', 'TYPE NAME', 'SMARTS')
+            print "%5s   %10sS %10s   %-50s" % ('INDEX', self.typetag.upper(), 'MOLECULES', 'TYPE NAME: SMIRKS')
 
         # Print counts
         for [smarts, typename] in typelist:
+            current_combo = "%s: %s" % (typename, smarts)
             if type_matches is not None:
                 (reference_typename, reference_count) = reference_type_info[typename]
                 if reference_typename is not None:
                     reference_total = self.reference_type_counts[reference_typename]
                     reference_fraction = float(reference_count) / float(reference_total)
-                    print "%5d : %10d %10d | %15s %32s %8s %16d / %16d (%7.3f%%)" % (index, typecounts[typename], molecule_typecounts[typename], typename, smarts, reference_typename, reference_count, reference_total, reference_fraction*100)
+                    reference_combo = "%s: %s" % (reference_typename, self.reference_typename_dict[reference_typename]) 
+                    print "%5d : %10d %10d | %-50s %-50s %7d / %7d (%7.3f%%)" % (index, typecounts[typename], molecule_typecounts[typename], current_combo, reference_combo, reference_count, reference_total, reference_fraction*100)
                 else:
-                    print "%5d : %10d %10d | %15s %32s" % (index, typecounts[typename], molecule_typecounts[typename], typename, smarts)
+                    print "%5d : %10d %10d | %-50s" % (index, typecounts[typename], molecule_typecounts[typename], current_combo)
             else:
-                print "%5d : %10d %10d | %15s %32s" % (index, typecounts[typename], molecule_typecounts[typename], typename, smarts)
+                print "%5d : %10d %10d | %-50s" % (index, typecounts[typename], molecule_typecounts[typename], current_combo)
 
             ntypes += typecounts[typename]
             index += 1
