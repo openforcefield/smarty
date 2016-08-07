@@ -173,7 +173,7 @@ class AtomTyper(object):
             if index != -1:
                 line = line[0:index]
             # Split into tokens.
-            tokens = string.split(line)
+            tokens = line.split()
             # Process if we have enough tokens
             if len(tokens) >= 2:
                 smarts = tokens[0]
