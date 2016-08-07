@@ -1,6 +1,6 @@
 from functools import partial
-from smarty import AtomTyper, AtomTypeSampler
 import smarty
+from smarty import AtomTyper, AtomTypeSampler
 from smarty.utils import get_data_filename
 from unittest import TestCase
 
@@ -34,10 +34,8 @@ class TestAtomTypeSampler(TestCase):
 
         # Start sampling atom types.
         fracfound = atomtype_sampler.run(2)
-        
+
         # Ensure fraction found is 1.0
         if fracfound < 1.0:
             raise Exception("Not finding 100% of AlkEthOH when starting from"
                             " correct SMARTS.")
-        
-        
