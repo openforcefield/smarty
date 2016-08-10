@@ -7,7 +7,7 @@
 """
 smirk.py
 
-Example illustrating a scheme to create and destroy bonds, angles, torsions and impropers 
+Example illustrating a scheme to create and destroy bonds, angles, torsions and impropers
 automatically using chemical environments to produce SMIRKS
 
 AUTHORS
@@ -49,7 +49,7 @@ import time
 from . import AtomTyper
 from score_utils import load_trajectory
 from score_utils import scores_vs_time
-from environment import * 
+from environment import *
 from forcefield_labeler import *
 from utils import *
 
@@ -76,30 +76,31 @@ class TypeSampler(object):
     """
     SMIRKS sampler for atoms, bonds, angles, torsions, and impropers.
     """
-    def __init__(self, molecules, elementList, ORdecorators, ANDdecorators, typetag, initialtypes = None, SMIRFF = None, temperature = 0.1, verbose = False):
-        # TODO: determine if initial types can be base types or if that needs to be handled as a second optional input
-        # TODO: bond OR and ANDS this list is much shorter, but I'm not sure how to implement it
+    def __init__(self, molecules, typetag, elementList, ORdecorators,
+            ANDdecorators, replacements = None,  initialtypes = None,
+            SMIRFF = None, temperature = 0.1, verbose = False):
         """
-        Initialize a bond type sampler  
-        (possbily generalize for angle/torsion/improper) or they will be subclasses
+        Initialize a fragment type sampler
+        For VdW, Bond, Angle, Torsion, or Improper
 
         Parameters
         -----------
-        molecules : list of OEmol objects, required 
-            List of molecules used for sampling (will also be used to compare to SMIRFF
+        molecules : list of OEmol objects, required
+            List of molecules used for sampling
         typetag : string, required
-            Must be one of these: 'Bond', 'Angle', 'Torsion', 'Improper', 'VdW'
+            Must 'Bond', 'Angle', 'Torsion', 'Improper', or 'VdW'
             'VdW' is for single labeled atom
         elementList : list of strings, required
-            List of elements or combined elements 
+            List of elements or combined elements
         ORdecorators: list of strings, required
             List of decorators that can be combined directly with an atom
             for example: for [#6X4, #8X2] 'X4' and 'X2' are ORdecorators
         ANDdecorators: list of strings, required
             List of decorators that are AND'd to the end of an atom
             for example: in [#6,#7,#8;H0;+0] 'H0' and '+0' are ANDdecorators
+        replacements: list of the form [short hand, smarts], optional
         initialtypes: list of chemical environments, optional
-            if None, the typetag is used to make an empty environment, such as [*:1]~[*:2] for a bond 
+            if None, the typetag is used to make an empty environment, such as [*:1]~[*:2] for a bond
         SMIRFF: string, optional
             file with the SMIRFF you wish to compare fragment typing with
         temperature : float, optional, default=0.1
@@ -117,9 +118,10 @@ class TypeSampler(object):
         self.ANDdecorators = ANDdecorators
         self.temperature = temperature
         self.SMIRFF = SMIRFF
-        
+        self.replacements = replacements
+
         if not typetag.lower() in ['bond', 'angle', 'torsion','improper','vdw']:
-            raise Exception("Error typetag %s is not recognized, please use 'Bond', 'Angle', 'Torsion', 'Improper', or 'VdW' ")  
+            raise Exception("Error typetag %s is not recognized, please use 'Bond', 'Angle', 'Torsion', 'Improper', or 'VdW' ")
         self.typetag = typetag
         self.forcetype = self.get_force_type(self.typetag)
 
@@ -156,13 +158,13 @@ class TypeSampler(object):
         self.elements = []
 
         for element in elementList:
-            # remove [ and ] 
+            # remove [ and ]
             e = element.replace(']','')
             e = e.replace('[','')
             self.elements.append(e)
 
-        
-        # Compute total types being sampled 
+
+        # Compute total types being sampled
         self.total_types = 0.0
         smirks = self.emptyEnv.asSMIRKS()
         for mol in self.molecules:
@@ -171,7 +173,7 @@ class TypeSampler(object):
 
         # Store reference molecules
         # TODO: update how to handle reference molecules
-        self.reference_types = [] 
+        self.reference_types = []
         self.current_atom_matches = None
         self.reference_typed_molecules = dict()
         self.reference_typename_dict = dict()
@@ -181,7 +183,7 @@ class TypeSampler(object):
             # if verbose = True here it prints matches for every type for  every molecule!
             labels = self.labeler.labelMolecules(self.molecules, verbose = False)
 
-            # save the type we are considering 
+            # save the type we are considering
             self.ref_labels = [l[self.forcetype] for l in labels]
 
             # get smiles to key reference typed molecule dictionary
@@ -191,10 +193,10 @@ class TypeSampler(object):
                 smile = smiles[idx]
                 self.reference_typed_molecules[smile] = {}
                 for (indices, pid, smirks) in label_set:
-                    self.reference_typename_dict[pid] = smirks 
+                    self.reference_typename_dict[pid] = smirks
                     self.reference_typed_molecules[smile][tuple(indices)] = pid
 
-            self.reference_types = [[smirks, pid] for pid, smirks in self.reference_typename_dict.items()] 
+            self.reference_types = [[smirks, pid] for pid, smirks in self.reference_typename_dict.items()]
             # Compute current atom matches
             [self.type_matches, self.total_type_matches] = self.best_match_reference_types(typelist)
             # Count atom types.
@@ -225,9 +227,9 @@ class TypeSampler(object):
             return 'PeriodicTorsionForce'
         # TODO: what is the force word for impropers?
         if typetag.lower() == 'improper':
-            return 'Improper' 
+            return 'Improper'
         return None
-        
+
     def emptyEnvironment(self, typetag):
         """
         Returns an empty atom, bond, angle, torsion or improper
@@ -239,7 +241,7 @@ class TypeSampler(object):
             indicates the type of system being sampled
         """
         if typetag.lower() == 'vdw':
-            return AtomChemicalEnvironment() 
+            return AtomChemicalEnvironment()
         if typetag.lower() == 'bond':
             return BondChemicalEnvironment()
         if typetag.lower() == 'angle':
@@ -264,17 +266,20 @@ class TypeSampler(object):
         matches: list of tuples
             atom indices for labeled atom in the smirks
         """
+        if self.replacements is not None:
+            smirks = OELexReplace(smirks, self.replacements)
+
         qmol = OEQMol()
         if not OEParseSmarts(qmol, smirks):
             raise Exception("Error parsing SMIRKS %s" % smirks)
 
-        # ValenceDict was written to handle symmetry
+        # ValenceDict was written to handle symmetry in SMIRKS
         matches = ValenceDict()
 
         # then require non-unique matches
         unique = False
         ss = OESubSearch(qmol)
-        
+
         for match in ss.Match(mol, unique):
             indices = dict()
             for ma in match.GetAtoms():
@@ -284,11 +289,25 @@ class TypeSampler(object):
                     indices[patMap-1] = ma.target.GetIdx()
 
             indices = [indices[idx] for idx in range(len(indices))]
-            matches[indices] = '' 
+            matches[indices] = ''
 
         return matches.keys()
 
     def get_typed_molecules(self, typelist):
+        """
+        Creates a dictionary assigning a typename
+        for each set of atom indices in each molecule
+
+        Parameters
+        ----------
+        typelist: list of tuples in the form (smirks, typename)
+
+        Returns
+        -------
+        typeDict: embedded dictionary
+            keys: SMILES string for each molecule
+                keys: tuple of indices assigned a parameter type
+        """
         # TODO: write doc string
         typeDict = dict()
         for mol in self.molecules:
@@ -353,7 +372,7 @@ class TypeSampler(object):
         for smile, indexDict in current_typed_molecules.items():
             for indices, current_typename in indexDict.items():
                 reference_typename = self.reference_typed_molecules[smile][indices]
-                types_in_common[(current_typename, reference_typename)] += 1 
+                types_in_common[(current_typename, reference_typename)] += 1
 
         for current_typename in current_typenames:
             for reference_typename in reference_typenames:
@@ -384,20 +403,23 @@ class TypeSampler(object):
         # Report on matches
         if self.verbose:
             print("PROPOSED:")
-            # TODO: update show_type_matches
-            self.show_type_matches(self.envList, type_matches)
+            self.show_type_matches(typelist, type_matches)
 
         return (type_matches, total_type_matches)
 
-    def show_type_matches(self, envList, type_matches):
+    def show_type_matches(self, typelist, type_matches):
         """
         Show pairing of current to reference atom types.
 
-        envList : list of current chemical environments with labels in type_matches
+        Parameters
+        ----------
+        typelist: list of [smirks, typenames]
         type_matches : list of (current_typename, reference_typename, counts)
             List of atom type matches.
 
-        Returns fraction_matched_atoms, the fractional count of matched atoms
+        Returns
+        --------
+        fraction_matched_atoms, the fractional count of matched atoms
 
         """
         print('Atom type matches:')
@@ -406,9 +428,7 @@ class TypeSampler(object):
         for (current_typename, reference_typename, counts) in type_matches:
             current_dict[current_typename] = (reference_typename, counts)
 
-        for env in envList:
-            current_typename = env.label
-            current_smirks = env.asSMIRKS()
+        for [current_smirks, current_typename] in typelist:
             (reference_typename, counts) = current_dict[current_typename]
             current_combo = "%s: %s" % (current_typename, current_smirks)
             if reference_typename is not None:
@@ -423,116 +443,22 @@ class TypeSampler(object):
         print('%d / %d total %ss match (%.3f %%)' % (total_type_matches, self.total_types, self.typetag, fraction_matched * 100))
 
         return fraction_matched
-    
-    
-    def AtomDecorator(self, atom1type, decorator):
-        """
-        Given an atom and a decorator ammend the SMARTS string with that decorator 
-        Returns at "atom" which is a tuple of [SMARTS, typeName] for the decorated atom
-        """
-        if self.HasAlpha(atom1type):
-            # decorators should go before the $ sign on the atom
-            dollar = atom1type[0].find('$')
-            proposed_atomtype = atom1type[0][:dollar] + decorator[0] + atom3[0][dollar:]
-            proposed_typename = atom1type[1] + ' ' + decorator[1]
-        else:
-            # No alpha atom so the decorator goes before the ']'
-            proposed_atomtype = atom1type[0][:-1] + decorator[0] + ']'
-            proposed_typename = atom1type[1] + ' '  + decorator[1]
-        return proposed_atomtype, proposed_typename
 
-    def PickAnAtom(self, atomList):
+    def PickAType(self, envList):
         """
-        takes a desired current set of atomtypes (current, base, populated base, or some combination of the 
-        above or something else) and pick one at random. (Here, we will typically but perhaps not always want 
-        to use currently populated atomtypes, i.e. the atomtypes list, not basetypes (generic types) or 
-        used_basetypes (base types which type anything)). A little silly, but still helpful. 
-        Returns a tuple corresponding to the selected (smarts, name).
+        Takes a list of chemical environments and returns one random entry
         """
-        atomtype_index = random.randint(0, len(atomList)-1)
-        return atomList[atomtype_index]
+        type_index = random.randint(0, len(envList)-1)
+        return envList[type_index]
 
-    def HasAlpha(self, atom1type):
+    def sample_types(self):
         """
-        Takes a specified atomtype tuple (smarts, name) and determines whether or not it already has an alpha 
-        substituent, returning True or False.
-        """
-        if atom1type[0].find("$") != -1:
-            return True
-        else:
-            return False
-
-    def AddAlphaSubstituentAtom(self, atom1type, bondset, atom2type, first_alpha):
-        """
-        Takes specified atomtypes atom1type and atom2type (where atom1type is a type without an alpha substituent), 
-        and a specified bond set, and introduces an alpha substituent involving atom2type (which can be a decorated 
-        type such as output by AtomDecorator); returns a tuple of (smarts, name) from the result. Example output 
-        for input of atom1type=("[#1]", "hydrogen"), bondset = (['-'], "single"), and atom2type = ("[#6]" is 
-        ("[#1$(*-[#6])]", "hydrogen singly bonded to carbon") or something along those lines. This should basically 
-        just be adding $(*zw) where z is the selected bond type and w is atom2type. It should raise an exception 
-        if an alpha substituent is attempted to be added to an atom1type which already has an alpha substituent.
-        """
-        if first_alpha:
-            result = re.match('\[(.+)\]', atom1type[0])
-            proposed_atomtype = '[' + result.groups(1)[0] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
-        else:
-            # Add the new alpha at the end
-            proposed_atomtype = atom1type[0][:len(atom1type[0])-1] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
-        proposed_typename = atom1type[1] + ' ' + bondset[1] + ' ' + atom2type[1] + ' '
-        return proposed_atomtype, proposed_typename
-
-    def AddBetaSubstituentAtom(self, atom1type, bondset, atom2type):
-        """
-        Takes specified atomtypes atom1type and atom2type (where atom1type is a type WITH an alpha substituent), 
-        and a specified bond set, and introduces an alpha substituent involving atom2type (which can be a 
-        decorated type such as output by AtomDecorator); returns a tuple of (smarts, name) from the result. 
-        Example output for input of atom1type=("[#1$(*-[#6])]", "hydrogen singly bonded to carbon"), 
-        bondset = (['-'], "single"), and atom2type = ("[#8]" is ("[#1$(*-[#6]-[#8])]", "hydrogen singly bonded 
-        to (carbon singly bonded to oxygen)") or something along those lines. This will have to handle two cases 
-        separately -- addition of the first beta substituent (where it is inserted between the characters (] and 
-        is inserted without parens), and addition of subsequent beta substituents (where it is inserted after 
-        the first set of [] in the substituent and is inserted enclosed in parens, i.e. (-[w]).) It should raise 
-        an exception if a beta substituent is attempted to be added to an atom1type which does not have an alpha 
-        substituent.
-        """
-
-        # counting '[' tells us how many atoms are in the mix
-        count = atom1type[0].count('[')
-        proposed_atomtype = ""
-        number_brackets = 0
-        # find closed alpha atom
-        closeAlpha = atom1type[0].find(']')
-        # This has two atoms (already has an alpha atom)
-        if count == 2: 
-            proposed_atomtype = atom1type[0][:closeAlpha+1]
-            proposed_atomtype += bondset[0] + atom2type[0] + ')]'
-            proposed_typename = atom1type[1] + bondset[1] + ' ' + atom2type[1]
-            if self.verbose: print("ADD FIRST BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
-        elif count > 2:
-            # Has an alpha atom with at least 1 beta atom
-            proposed_atomtype = atom1type[0][:closeAlpha+1]
-            proposed_atomtype += '(' + bondset[0] + atom2type[0] + ')'
-            proposed_atomtype += atom1type[0][closeAlpha+1:]
-            proposed_typename = atom1type[1] + ' (' + bondset[1] + ' ' + atom2type[1] + ')'
-            if self.verbose: print("ADD MORE BETA SUB: proposed --- %s %s" % ( str(proposed_atomtype), str(proposed_typename)))
-        else:
-            # Has only 1 atom which means there isn't an alpha atom yet, add an alpha atom instead
-            proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondset, atom2type) 
-        return proposed_atomtype, proposed_typename
-
-
-    def sample_atomtypes(self): 
-        """
-        Perform one step of atom type sampling.
+        Perform one step of sampling the current set of chemical environments
 
         """
         # Copy current atomtypes for proposal.
-        proposed_atomtypes = copy.deepcopy(self.atomtypes)
-        proposed_molecules = copy.deepcopy(self.molecules)
-        proposed_parents = copy.deepcopy(self.parents)
-        natomtypes = len(proposed_atomtypes)
-        ndecorators = len(self.decorators)
-        natombasetypes = len(self.atom_basetype)
+        proposed_envList = copy.deepcopy(self.envList)
+        ntypes = len(proposed_envList)
 
         valid_proposal = True
 
@@ -541,9 +467,9 @@ class TypeSampler(object):
             atomtype_index = random.randint(0, natomtypes-1)
             (atomtype, typename) = proposed_atomtypes[atomtype_index]
             if self.verbose: print("Attempting to destroy atom type %s : %s..." % (atomtype, typename))
-            # Reject deletion of (populated) base types as we want to retain 
+            # Reject deletion of (populated) base types as we want to retain
             # generics even if empty
-            if [atomtype, typename] in self.used_basetypes: 
+            if [atomtype, typename] in self.used_basetypes:
                 if self.verbose: print("Destruction rejected for atom type %s because this is a generic type which was initially populated." % atomtype )
                 return False
 
@@ -578,7 +504,7 @@ class TypeSampler(object):
                 proposed_atomtype = '[' + result.groups(1)[0] + '&' + decorator + ']'
                 proposed_typename = atomtype_typename + ' ' + decorator_typename
                 if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atomtype, atomtype_typename, decorator, decorator_typename, proposed_atomtype, proposed_typename))
-            
+
                 # Update proposed parent dictionary
                 proposed_parents[atomtype].append([proposed_atomtype, proposed_typename])
                 # Hack to make naming consistent with below
@@ -632,7 +558,7 @@ class TypeSampler(object):
             if proposed_atomtype in existing_atomtypes:
                 if self.verbose: print("Atom type already exists; rejecting to avoid duplication.")
                 valid_proposal = False
-            
+
             # Check for valid proposal before proceeding.
             if not valid_proposal:
                 return False
@@ -697,19 +623,19 @@ class TypeSampler(object):
             return True
         else:
             return False
-    
+
     def compute_type_statistics(self, typelist):
         """
         Compute statistics for numnber of molecules assigned each type.
 
-        ARGUMENTS
+        Parameters
         ----------
         typelist: list of lists with the form [smarts, typename]
 
-        RETURNS
+        Returns
         -------
-        typecounts (dict) - number of matches for each fragment type 
-        molecule_typecounds (dict) - number of molecules that contain each fragment type 
+        typecounts (dict) - number of matches for each fragment type
+        molecule_typecounds (dict) - number of molecules that contain each fragment type
 
         """
         # Zero type counts by atom and molecule.
@@ -718,7 +644,7 @@ class TypeSampler(object):
         for [smarts, typename] in typelist:
             typecounts[typename] = 0
             molecule_typecounts[typename] = 0
-        
+
         typed_molecules = self.get_typed_molecules(typelist)
         # Count number of atoms with each type.
         for molecule, indexDict in typed_molecules.items():
@@ -728,14 +654,20 @@ class TypeSampler(object):
                 typenames_in_molecule.add(typename)
             for typename in typenames_in_molecule:
                 molecule_typecounts[typename] += 1
-                
+
         return (typecounts, molecule_typecounts)
 
     def show_type_statistics(self, typelist, typecounts, molecule_typecounts, type_matches=None):
-        # TODO: update doc string 
         """
         Print type statistics.
 
+        Parameters
+        -----------
+        typelist - list of lists with form [smirks, typename]
+        typecounts (dict) - number of matches for each fragment type
+        molecule_typecounds (dict) - number of molecules that contain each fragment type
+        type_matches : list of tuples (current_typelabel, reference_typelabel, counts)
+            Best correspondence between current and reference atomtypes, along with number of atoms equivalently typed in reference molecule set.
         """
         index = 1
         ntypes = 0
@@ -759,7 +691,7 @@ class TypeSampler(object):
                 if reference_typename is not None:
                     reference_total = self.reference_type_counts[reference_typename]
                     reference_fraction = float(reference_count) / float(reference_total)
-                    reference_combo = "%s: %s" % (reference_typename, self.reference_typename_dict[reference_typename]) 
+                    reference_combo = "%s: %s" % (reference_typename, self.reference_typename_dict[reference_typename])
                     print "%5d : %10d %10d | %-50s %-50s %7d / %7d (%7.3f%%)" % (index, typecounts[typename], molecule_typecounts[typename], current_combo, reference_combo, reference_count, reference_total, reference_fraction*100)
                 else:
                     print "%5d : %10d %10d | %-50s" % (index, typecounts[typename], molecule_typecounts[typename], current_combo)
@@ -778,29 +710,34 @@ class TypeSampler(object):
 
         return
 
-    def save_type_statistics(self, typelist, atom_typecounts, molecule_typecounts, atomtype_matches=None):
+    def save_type_statistics(self, typelist, typecounts, molecule_typecounts, type_matches=None):
         """
-        Save "atom type" matches to be output to trajectory
-        This isn't the most elegant solution, but it will make an output file we can read back in
+        Collects atom typecount information for a csv "trajectory" output file
 
+        Parameters
+        -----------
+        typelist - list of lists with form [smirks, typename]
+        typecounts (dict) - number of matches for each fragment type
+        molecule_typecounds (dict) - number of molecules that contain each fragment type
+        type_matches : list of tuples (current_typelabel, reference_typelabel, counts)
+            Best correspondence between current and reference atomtypes, along with number of atoms equivalently typed in reference molecule set.
         """
-        if atomtype_matches is not None:
+        if type_matches is not None:
             reference_type_info = dict()
-            for (typename, reference_atomtype, count) in atomtype_matches:
-                reference_type_info[typename] = (reference_atomtype, count)
+            for (current_typename, reference_typename, count) in type_matches:
+                reference_type_info[current_typename] = (reference_atomtype, count)
 
         index = 1
         output = []
         # Print counts
         # INDEX, SMARTS, PARENT INDEX, REF TYPE, MATCHES, MOLECULES, FRACTION, OUT of, PERCENTAGE
         for [smarts, typename] in typelist:
-            if atomtype_matches is not None:
+            if type_matches is not None:
                 (reference_atomtype, reference_count) = reference_type_info[typename]
                 if reference_atomtype is not None:
-                    reference_total = self.reference_atomtypes_atomcount[reference_atomtype]
-                    reference_fraction = float(reference_count) / float(reference_total)
+                    reference_total = self.reference_type_counts[reference_typename]
                     # Save output
-                    output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, reference_atomtype, atom_typecounts[typename], molecule_typecounts[typename], reference_count, reference_total))
+                    output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, reference_typename, typecounts[typename], molecule_typecounts[typename], reference_count, reference_total))
                 else:
                     output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, 'NONE', atom_typecounts[typename], molecule_typecounts[typename], 0, 0))
 
@@ -809,50 +746,9 @@ class TypeSampler(object):
             index += 1
         return output
 
-    def get_unfinishedAtomList(self, atom_typecounts, molecule_typecounts, atomtype_matches = None):
-        """
-        This method prunes the set of current atomtypes so that if all branches 
-        of a base type have been found it no longer tries extending any atom of that base type.  
-        """
-        # Reset unmatched atom types incase something was destroyed
-        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
-
-        # If we don't have reference matches, unmatched_atomtypes should be all current atomtypes 
-        if atomtype_matches is None:
-            return
-        else: # store counts for each atom type
-            reference_counts = dict()
-            for (typename, reference_atomtype, count) in atomtype_matches:
-                if reference_atomtype is None:
-                    reference_counts[typename] = 0
-                else:
-                    reference_counts[typename] = count
-
-        # If all of a basetype and it's children match found atoms and reference remove from list
-        for [base_smarts, base_typename] in self.used_basetypes:
-            includeBase = True
-            
-            # If the number of atoms matches the references are the same for basetypes and their children
-            # then we have found all reference types for that element and should stop searching that branch
-            if atom_typecounts[base_typename] == reference_counts[base_typename]:
-                includeBase = False
-                for [child_smarts, child_name] in self.parents[base_smarts]:
-                    # If any of the children's atom count and reference count don't agree then these should stay in the unmatched_atomtypes
-                    if not atom_typecounts[child_name] == reference_counts[child_name]:
-                        includeBase = True
-                        break
-
-            # Remove atomtypes from completed element branches
-            if not includeBase:
-                self.unmatched_atomtypes.remove([base_smarts, base_typename])
-                for child in self.parents[base_smarts]:
-                    self.unmatched_atomtypes.remove(child)
-
-        return
-
     def print_parent_tree(self, roots, start=''):
         """
-        Recursively prints the parent tree. 
+        Recursively prints the parent tree.
 
         Parameters
         ----------
@@ -863,7 +759,6 @@ class TypeSampler(object):
             if r in self.parents.keys():
                 new_roots = [smart for [smart, name] in self.parents[r]]
                 self.print_parent_tree(new_roots, start+'\t')
-
 
     def run(self, niterations, trajFile=None, plotFile=None):
         """
@@ -889,13 +784,14 @@ class TypeSampler(object):
             if self.verbose:
                 print("Iteration %d / %d" % (iteration, niterations))
 
-            accepted = self.sample_atomtypes()
-            [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
-            self.get_unfinishedAtomList(atom_typecounts, molecule_typecounts, atomtype_matches = self.atom_type_matches)
+            accepted = self.sample_types()
+            typelist = [[env.asSMIRKS(), env.label] for env in self.envList]
+            [self.type_matches, self.total_type_matches] = self.best_match_reference_types(typelist)
+            [typecounts, molecule_typecounts] = self.compute_type_statistics(typelist)
 
             if trajFile is not None:
                 # Get data as list of csv strings
-                lines = self.save_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
+                lines = self.save_type_statistics(typelist, typecounts, molecule_typecounts, type_matches=self.type_matches)
                 # Add lines to trajectory with iteration number:
                 for l in lines:
                     self.traj.append('%i,%s \n' % (iteration, l))
@@ -907,20 +803,21 @@ class TypeSampler(object):
                     print('Rejected.')
 
                 # Compute atomtype statistics on molecules.
-                self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts, atomtype_matches=self.atom_type_matches)
+                self.show_type_statistics(typelist, typecounts, molecule_typecounts, type_matches=self.type_matches)
                 print('')
 
+                # TODO: figure out how to handle parent dictionary with chemical environments
                 # Print parent tree as it is now.
-                roots = self.parents.keys()
+                #roots = self.parents.keys()
                 # Remove keys from roots if they are children
-                for parent, children in self.parents.items():
-                    child_smarts = [smarts for [smarts, name] in children]
-                    for child in child_smarts:
-                        if child in roots:
-                            roots.remove(child)
+                #for parent, children in self.parents.items():
+                #    child_smarts = [smarts for [smarts, name] in children]
+                #    for child in child_smarts:
+                #        if child in roots:
+                #            roots.remove(child)
 
-                print("Atom type hierarchy:")
-                self.print_parent_tree(roots, '\t')
+                #print("Atom type hierarchy:")
+                #self.print_parent_tree(roots, '\t')
 
         if trajFile is not None:
             # make "trajectory" file
@@ -930,60 +827,31 @@ class TypeSampler(object):
             start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
             f.writelines(start + self.traj)
             f.close()
- 
+
             # Get/print some stats on trajectory
             # Load timeseries
             timeseries = load_trajectory( trajFile )
             time_fractions = scores_vs_time( timeseries )
             print("Maximum score achieved: %.2f" % max(time_fractions['all']))
 
-        # If desired, make plot
-        if plotFile:
-            import pylab as pl
-            if not trajFile:
-                raise Exception("Cannot construct plot of trajectory without a trajectory file.")
-            # Load timeseries
-            timeseries = load_trajectory( trajFile )
-            time_fractions = scores_vs_time( timeseries )
-
-            # Plot overall score
-            pl.plot( time_fractions['all'], 'k-', linewidth=2.0)
-
-            # Grab reference types other than 'all'
-            plot_others = False
-            if plot_others:
-                reftypes = time_fractions.keys()
-                reftypes.remove('all')
-
-                # Plot scores for individual types
-                for reftype in reftypes:
-                    pl.plot( time_fractions[reftype] )
-            
-            # Axis labels and legend
-            pl.xlabel('Iteration')
-            pl.ylabel('Fraction of reference type found')
-            if plot_others:
-                pl.legend(['all']+reftypes, loc="lower right")
-            pl.ylim(-0.1, 1.1)
-
-            # Save
-            pl.savefig( plotFile )
-
-
         #Compute final type stats
-        [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
-        fraction_matched_atoms = self.show_type_matches(self.atom_type_matches)
+        typelist = [ [env.asSMIRKS, env.label] for env in self.envList]
+        [self.type_matches, self.total_type_matches] = self.best_match_reference_types(typelist)
+        [typecounts, molecule_typecounts] = self.compute_type_statistics(typelist)
+        fraction_matched_atoms = self.show_type_matches(typelist, self.type_matches)
 
         # If verbose print parent tree:
-        if self.verbose: 
-            roots = self.parents.keys()
+        if self.verbose:
+            # TODO: update to monitor parent/child hierarchy
+            print("Need to add printing for parent dictionary back in")
+            #roots = self.parents.keys()
             # Remove keys from roots if they are children
-            for parent, children in self.parents.items():
-                child_smarts = [smarts for [smarts, name] in children]
-                for child in child_smarts:
-                    if child in roots:
-                        roots.remove(child)
+            #for parent, children in self.parents.items():
+            #    child_smarts = [smarts for [smarts, name] in children]
+            #    for child in child_smarts:
+            #        if child in roots:
+            #            roots.remove(child)
 
-            print("Atom type hierarchy:")
-            self.print_parent_tree(roots, '\t')
+            #print("Atom type hierarchy:")
+            #self.print_parent_tree(roots, '\t')
         return fraction_matched_atoms
