@@ -125,9 +125,9 @@ class AtomTyper(object):
                     matchpair.target.SetStringData(self.pattyTag,type)
 
         # Check if any atoms remain unassigned.
-        for atom in mol.GetAtoms():
-            if atom.GetStringData(self.pattyTag)=="":
-                raise AtomTyper.TypingException(mol, atom)
+        #for atom in mol.GetAtoms():
+        #    if atom.GetStringData(self.pattyTag)=="":
+        #        raise AtomTyper.TypingException(mol, atom)
         return
 
     def debugTypes(self,mol):
