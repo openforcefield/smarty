@@ -116,7 +116,7 @@ class TypeSampler(object):
             List of decorators that are AND'd to the end of an atom
             for example: in [#6,#7,#8;H0;+0] 'H0' and '+0' are ANDdecorators
         replacements: list of the form [short hand, smarts], optional
-        initialtypes: list of chemical environments, optional
+        initialtypes: initial typelist in form [smirks, typename], optional
             if None, the typetag is used to make an empty environment, such as [*:1]~[*:2] for a bond
         SMIRFF: string, optional
             file with the SMIRFF you wish to compare fragment typing with
@@ -157,7 +157,11 @@ class TypeSampler(object):
         if initialtypes == None:
             self.envList = [copy.deepcopy(self.emptyEnv)]
         else:
-            self.envList = [copy.deepcopy(initialtype) for initialtype in initialtypes]
+            self.envList = list()
+            for smirks, typename in initialtypes:
+                env = ChemicalEnvironment(smirks)
+                env.label = typename
+                self.envList.append(env)
 
         typeLabels = []
         for env in self.envList:
