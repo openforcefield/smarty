@@ -49,7 +49,7 @@ import time
 from score_utils import load_trajectory
 from score_utils import scores_vs_time
 from environment import *
-from forcefield_labeler import *
+from forcefield import *
 from utils import *
 
 # ==============================================================================
@@ -208,10 +208,11 @@ class TypeSampler(object):
         self.reference_typed_molecules = dict()
         self.reference_typename_dict = dict()
         if self.SMIRFF is not None:
+            if self.verbose: print("Creating labeler from %s..." % self.SMIRFF)
             # get labeler for specified SMIRFF
-            self.labeler = ForceField_labeler(get_data_filename(self.SMIRFF))
+            self.labeler = ForceField(get_data_filename(self.SMIRFF))
             # if verbose = True here it prints matches for every type for  every molecule!
-            labels = self.labeler.labelMolecules(self.molecules, verbose = False)
+            labels = self.labeler.labelMolecules(self.molecules, verbose = self.verbose)
 
             # save the type we are considering
             self.ref_labels = [l[self.forcetype] for l in labels]
@@ -252,16 +253,16 @@ class TypeSampler(object):
             indicates the type of system being sampled
         """
         if typetag.lower() == 'vdw':
-            return 'NonbondedForce'
+            return 'NonbondedGenerator'
         if typetag.lower() == 'bond':
-            return 'HarmonicBondForce'
+            return 'HarmonicBondGenerator'
         if typetag.lower() == 'angle':
-            return 'HarmonicAngleForce'
+            return 'HarmonicAngleGenerator'
         if typetag.lower() == 'torsion':
-            return 'PeriodicTorsionForce'
+            return 'PeriodicTorsionGenerator'
         # TODO: what is the force word for impropers?
         if typetag.lower() == 'improper':
-            return 'Improper'
+            return 'PeriodicTorsionGenerator'
         return None
 
     def empty_environment(self, typetag):
