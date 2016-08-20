@@ -216,7 +216,7 @@ class TypeSampler(object):
             # get labeler for specified SMIRFF
             self.labeler = ForceField(get_data_filename(self.SMIRFF))
             # if verbose = True here it prints matches for every type for  every molecule!
-            labels = self.labeler.labelMolecules(self.molecules, verbose = self.verbose)
+            labels = self.labeler.labelMolecules(self.molecules, verbose=False)
 
             # save the type we are considering
             self.ref_labels = [l[self.forcetype] for l in labels]
@@ -526,10 +526,10 @@ class TypeSampler(object):
         new_env = copy.deepcopy(env)
         # get new label for it
         new_env.label = _get_new_label([e.label for e in self.envList])
-
+        noBonds = len(new_env.getBonds()) == 0
         #Decide between changing an atom or a bond
         # TODO: determine how frequently to chose atom or bond
-        if random.random() < 0.5:
+        if random.random() < 0.5 or noBonds:
             # pick a random atom
             atom = new_env.selectAtom()
             pick = random.randint(1,6)
