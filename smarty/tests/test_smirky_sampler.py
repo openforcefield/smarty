@@ -3,6 +3,7 @@ from smarty.environment import *
 from smarty.sampler_smirky import *
 from smarty.utils import *
 from operator import itemgetter, attrgetter
+import openeye.oechem
 from openeye.oechem import *
 import copy
 import sys # used to exit while testing
@@ -21,8 +22,8 @@ class TestSmirkySampler(TestCase):
         Test 100% score with correct VdW types in AlkEtOH
         """
         typetag = 'VdW'
-        
-        initialList = [ ["[#1:1]-[#6]", 'HC'], 
+
+        initialList = [ ["[#1:1]-[#6]", 'HC'],
                 [ "[#1:1]-[#6]-[#7,#8,F,#16,Cl,Br]", 'H1'],
                 [ "[#1:1]-[#6](-[#7,#8,F,#16,Cl,Br])-[#7,#8,F,#16,Cl,Br]", 'H2'],
                 [ "[#1:1]-[#6](-[#7,#8,F,#16,Cl,Br])(-[#7,#8,F,#16,Cl,Br])-[#7,#8,F,#16,Cl,Br]", 'H3'],
@@ -45,7 +46,7 @@ class TestSmirkySampler(TestCase):
                 [ "[#6X4:1]-[#1:2]", 'CT-H'],
                 [ "[#8:1]~[#1:2]", 'O~H'],
                 [ "[#6X4:1]-[#8;X2;H1:2]", "CT-OH"],
-                [ "[#6X4:1]-[#8;X2;H0:2]", "CT-OS"] ] 
+                [ "[#6X4:1]-[#8;X2;H0:2]", "CT-OS"] ]
 
         typetag = 'Bond'
         sampler = TypeSampler(molecules, typetag, elements, ORs, ANDs, replacements, initialList, SMIRFF, 0.0, False)
@@ -59,7 +60,7 @@ class TestSmirkySampler(TestCase):
         """
         Test 100% score with correct Angles types in AlkEtOH
         """
-        initialList = [ [ "[a,A:1]-[#6&X4:2]-[a,A:3]", 'any-CT-any'], 
+        initialList = [ [ "[a,A:1]-[#6&X4:2]-[a,A:3]", 'any-CT-any'],
                 [ "[#1:1]-[#6&X4:2]-[#1:3]", "H-CT-H"],
                 [ "[#6&X4:1]-[#6&X4:2]-[#6&X4:3]", 'CT-CT-CT'],
                 [ "[#8&X2:1]-[#6&X4:2]-[#8&X2:3]", 'O-CT-O'],
@@ -78,7 +79,7 @@ class TestSmirkySampler(TestCase):
         """
         Test 100% score with correct Torsions types in AlkEtOH
         """
-        initialList = [["[a,A:1]-[#6&X4:2]-[#6&X4:3]-[a,A:4]", 'any-CT-CT-any'], 
+        initialList = [["[a,A:1]-[#6&X4:2]-[#6&X4:3]-[a,A:4]", 'any-CT-CT-any'],
                 [ "[a,A:1]-[#6&X4:2]-[#8&X2:3]-[#1:4]", 'any-CT-OH-HO'],
                 [ "[a,A:1]-[#6&X4:2]-[#8&X2:3]-[!#1:4]", 'any-CT-OS-!H'],
                 [ "[#1:1]-[#6&X4:2]-[#6&X4:3]-[#1:4]", 'H-CT-CT-H'],
