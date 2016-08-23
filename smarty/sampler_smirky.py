@@ -783,9 +783,9 @@ class TypeSampler(object):
 
         # Print header
         if type_matches is not None:
-            print "%5s   %10sS %10s   %-50s %-50s %30s" % ('INDEX', self.typetag.upper(), 'MOLECULES', 'TYPE NAME: SMIRKS', 'REF TYPE: SMIRKS', 'FRACTION OF REF TYPED MOLECULES MATCHED')
+            print("%5s   %10sS %10s   %-50s %-50s %30s" % ('INDEX', self.typetag.upper(), 'MOLECULES', 'TYPE NAME: SMIRKS', 'REF TYPE: SMIRKS', 'FRACTION OF REF TYPED MOLECULES MATCHED'))
         else:
-            print "%5s   %10sS %10s   %-50s" % ('INDEX', self.typetag.upper(), 'MOLECULES', 'TYPE NAME: SMIRKS')
+            print("%5s   %10sS %10s   %-50s" % ('INDEX', self.typetag.upper(), 'MOLECULES', 'TYPE NAME: SMIRKS'))
 
         # Print counts
         for [smarts, typename] in typelist:
@@ -796,11 +796,11 @@ class TypeSampler(object):
                     reference_total = self.reference_type_counts[reference_typename]
                     reference_fraction = float(reference_count) / float(reference_total)
                     reference_combo = "%s: %s" % (reference_typename, self.reference_typename_dict[reference_typename])
-                    print "%5d : %10d %10d | %-50s %-50s %7d / %7d (%7.3f%%)" % (index, typecounts[typename], molecule_typecounts[typename], current_combo, reference_combo, reference_count, reference_total, reference_fraction*100)
+                    print("%5d : %10d %10d | %-50s %-50s %7d / %7d (%7.3f%%)" % (index, typecounts[typename], molecule_typecounts[typename], current_combo, reference_combo, reference_count, reference_total, reference_fraction*100))
                 else:
-                    print "%5d : %10d %10d | %-50s" % (index, typecounts[typename], molecule_typecounts[typename], current_combo)
+                    print("%5d : %10d %10d | %-50s" % (index, typecounts[typename], molecule_typecounts[typename], current_combo))
             else:
-                print "%5d : %10d %10d | %-50s" % (index, typecounts[typename], molecule_typecounts[typename], current_combo)
+                print("%5d : %10d %10d | %-50s" % (index, typecounts[typename], molecule_typecounts[typename], current_combo))
 
             ntypes += typecounts[typename]
             index += 1
@@ -808,9 +808,9 @@ class TypeSampler(object):
         nmolecules = len(self.molecules)
 
         if type_matches is not None:
-            print "%5s : %10d %10d |  %15s %32s %8d / %8d match (%.3f %%)" % ('TOTAL', ntypes, nmolecules, '', '', self.total_type_matches, self.total_types, (float(self.total_type_matches) / float(self.total_types)) * 100)
+            print("%5s : %10d %10d |  %15s %32s %8d / %8d match (%.3f %%)" % ('TOTAL', ntypes, nmolecules, '', '', self.total_type_matches, self.total_types, (float(self.total_type_matches) / float(self.total_types)) * 100))
         else:
-            print "%5s : %10d %10d" % ('TOTAL', ntypes, nmolecules)
+            print("%5s : %10d %10d" % ('TOTAL', ntypes, nmolecules))
 
         return
 
