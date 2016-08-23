@@ -46,11 +46,11 @@ import networkx
 
 import time
 
-from score_utils import load_trajectory
-from score_utils import scores_vs_time
-from environment import *
-from forcefield import *
-from utils import *
+from smarty.score_utils import load_trajectory
+from smarty.score_utils import scores_vs_time
+from smarty.environment import *
+from smarty.forcefield import *
+from smarty.utils import *
 
 # ==============================================================================
 # PRIVATE SUBROUTINES
