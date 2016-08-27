@@ -30,10 +30,9 @@ from optparse import OptionParser # For parsing of command line arguments
 import os
 import math
 import copy
-import re
 import numpy
-import random
-
+from numpy import random
+# TODO: if running in python 2 do we need anything from __future__ ?
 import openeye.oechem
 import openeye.oeomega
 import openeye.oequacpac
@@ -43,15 +42,15 @@ from openeye.oeomega import *
 from openeye.oequacpac import *
 
 import networkx
-
 import time
 
-from smarty.score_utils import load_trajectory
-from smarty.score_utils import scores_vs_time
 from smarty.environment import *
 from smarty.forcefield import *
 from smarty.utils import *
 
+# Currently not used
+from smarty.score_utils import load_trajectory
+from smarty.score_utils import scores_vs_time
 # ==============================================================================
 # PRIVATE SUBROUTINES
 # ==============================================================================
@@ -83,6 +82,38 @@ def _get_new_label(current, lowLim=1000, highLim=10000, maxIt = 1000000):
             return None
     return label
 
+def _OddsToWeights(choices):
+    """
+    Takes a set of properties and their odds and converts to weights
+
+    choices: tuple of two (properties, odds)
+        properties: list of anything
+        odds: list of numbers or None
+            if None all properties are equally probable
+
+    returns tuple of two (properties, probabilities)
+    """
+    props = choices[0]
+    if choices[1] == None:
+        current_odds = numpy.ones(len(props))
+    else:
+        current_odds = numpy.array(odds[1])
+
+    weights = current_odds / np.sum(current_odds)
+    return (props, weights)
+
+def _PickFromWeightedChoices(choices):
+    """
+    Given a set of properties adn their relative odds
+
+    choices: tuple of two (properties, /weights)
+        properties: list of anything
+        weights: list of probabilities
+    """
+    indices = range(len(choices[0]))
+    pickIndex = random.choice(indices, choices[1])
+    return choices[0][pickIndex], choices[1][pickIndex]
+
 #=============================================================================================
 # ATOMTYPE SAMPLER
 #=============================================================================================
@@ -92,7 +123,8 @@ class TypeSampler(object):
     SMIRKS sampler for atoms, bonds, angles, torsions, and impropers.
     """
     def __init__(self, molecules, typetag, elementList, ORdecorators,
-            ANDdecorators, replacements = None,  initialtypes = None,
+            ANDdecorators, AtomIndexOdds = None, BondIndexOdds = None,
+            replacements = None,  initialtypes = None,
             SMIRFF = None, temperature = 0.1, verbose = False):
         """
         Initialize a fragment type sampler
@@ -105,16 +137,25 @@ class TypeSampler(object):
         typetag : string, required
             Must 'Bond', 'Angle', 'Torsion', 'Improper', or 'VdW'
             'VdW' is for single labeled atom
-        elementList : list of strings, required
-            each element can be an atomic number ('#1'),
-            list of atomic numbers ('#1,#6,#7') or
+
+        The following parameters come in the form of tuples of two
+        with ( [features], [odds or probabilities])
+        if [probabilities] = None all are treated equally
+        ------------------------------------------------
+        elementList : list of strings and their probabilities, required
+            each element can be an atomic number ('#1') or
             shorthand name that is in the replacements list
-        ORdecorators: list of strings, required
+        ORdecorators: list of strings and their probabilities, required
             List of decorators that can be combined directly with an atom
             for example: for [#6X4, #8X2] 'X4' and 'X2' are ORdecorators
-        ANDdecorators: list of strings, required
+        ANDdecorators: list of strings and their probabilities, required
             List of decorators that are AND'd to the end of an atom
             for example: in [#6,#7,#8;H0;+0] 'H0' and '+0' are ANDdecorators
+        AtomIndexOdds and BondIndexOdds have list of atom and bond indices
+            options for property lists: atom indices (integer),
+            or string descriptor from : indexed, unindexed, alpha, beta
+            if None all atoms and bonds will be treated equally
+        ------------------------------------------------
         replacements: list of the form [short hand, smarts], optional
         initialtypes: initial typelist in form [smirks, typename], optional
             if None, the typetag is used to make an empty environment, such as [*:1]~[*:2] for a bond
@@ -131,12 +172,20 @@ class TypeSampler(object):
         """
         # Save properties that remain unchanged
         self.verbose = verbose
-        self.ORdecorators = ORdecorators
-        self.ANDdecorators = ANDdecorators
+        self.ORdecorators = _OddsToWeights(ORdecorators)
+        self.ANDdecorators = _OddsToWeights(ANDdecorators)
         self.temperature = temperature
         self.SMIRFF = SMIRFF
         self.replacements = replacements
         self.types_with_no_matches = []
+
+        if AtomIndexOdds == None:
+            AtomIndexOdds = [['all'], [1]]
+        if BondIndexOdds == None:
+            BondIndexOdds = [ ['all'], [1]]
+
+        self.AtomIndexOdds = _OddsToWeights(AtomIndexOdds)
+        self.BondIndexOdds = _OddsToWeights(BondIndexOdds)
 
         if not typetag.lower() in ['bond', 'angle', 'torsion','improper','vdw']:
             raise Exception("Error typetag %s is not recognized, please use 'Bond', 'Angle', 'Torsion', 'Improper', or 'VdW' ")
@@ -196,17 +245,26 @@ class TypeSampler(object):
         if self.verbose: self.show_type_statistics(typelist, typecounts, molecule_typecounts)
 
         # Store elements without the [ ]
-        self.elements = set()
-        for element in elementList:
+        self.elements = ( [], [])
+        elementList = zip(elementList[0], elementList[1])
+        for (element, prob) in elementList:
             e = element.replace('[','')
             e = e.replace(']','')
+            # Check if element is used in any molecule
             for mol in self.molecules:
+                useE = False
                 matches = self.get_SMIRKS_matches(mol, '[%s:1]' % e)
                 if len(matches) > 0:
-                    self.elements.add(e)
-        self.elements = list(self.elements)
-        for e in self.elements:
-            print(e)
+                    useE = True
+                    break
+            # Save the used ones only
+            if useE:
+                self.elements[0].append(e)
+                self.elements[1].append(prob)
+            else:
+                if self.verbose:
+                    print("removing unused element (%s) from list" % element)
+
         # Store reference molecules
         self.reference_types = []
         self.reference_typed_molecules = dict()
@@ -518,97 +576,104 @@ class TypeSampler(object):
             decor = random.choice(self.ORdecorators)
             return element+decor
 
+    def pick_an_atom(self, env):
+        """
+        Uses AtomIndexOdds to chose an atom
+        returns an Atom object and its associated probability
+        """
+        descriptor, prob = _PickFromWeightedChoices(self.AtomIndexOdds)
+        atom = env.selectAtom(descriptor)
+        return atom, prob
+
+    def pick_a_bond(self, env):
+        """
+        Uses BondIndexOdds to chose a bond
+        returns a Bond object and its associated probability
+        """
+        descriptor, prob = _PickFromWeightedChoices(self.BondIndexOdds)
+        bond = env.selectBond(descriptor)
+        return bond, prob
+
+    def add_swp_delete(current, new, new_prob, probabilities = None):
+        """
+        Makes a change to a current list of properties
+
+        Parameters
+        -----------
+        current: current list for that property
+        new: new property for the list
+        new_prob: probability for picking that new property
+        probabilities: probability or Odds list for
+            [add property, swap property, delete a property]
+
+        Returns
+        --------
+        newList, probability of creating it
+        or None, 0 if no change was made
+        """
+        opts = [1,2,3]
+        if len(current) == 0:
+            opts = [1,2]
+            probabilities = probabilities[:2]
+
+        moveList = _OddsToWeights( (opts, probabilities) )
+        move, move_prob = _PickFromWeightedChoices(moveList)
+        newList = current
+
+        if move == 2 or move == 3: # swap or delete
+            removeList = _OddsToWeights(current, None)
+            remove, remove_prob = _PickFromWeightedChoices(removeList)
+            newList.remove(remove)
+            move_prob *= remove_prob
+
+        if move == 1 or move == 2: # add or swap property
+            newList.append(new)
+            move_prob *= new_prob
+
+        return newList, move_prob
+
+    def change_bond(self,env,bond):
+        """
+        Makes changes to the Bond object
+        returns probability of making change
+        """
+        # Can only make changes to the bond OR or AND types
+        changeOR = random.choice([True, False], p = [0.7, 0.3])
+        if changeOR:
+            new_OR, prob1 = _PickFromWeightedChoices(self.bondORdecorators)
+            current = bond.getORtypes()
+            new_list, new_prob = add_swp_delete(new_OR, new_prob,current, None)
+            bond.setORtypes(new_list)
+            return 0.7 * new_prob
+
+        else: # change AND type
+            new_AND, new_prob = _PickFromWeightedChoices(self.bondANDdecorators)
+            current = bond.getANDtypes()
+            new_list, new_prob = add_swp_delete(new_AND, new_prob, current, None)
+            bond.setANDtypes(new_list)
+            return new_prob * 0.3
+
     def create_new_environment(self, env):
         """
         Given a parent environment type it creates a new child environment
-        returns child environment type
+        returns child environment type and probability of creating it
         """
         new_env = copy.deepcopy(env)
-        # get new label for it
         new_env.label = _get_new_label([e.label for e in self.envList])
-        noBonds = len(new_env.getBonds()) == 0
-        #Decide between changing an atom or a bond
-        # TODO: determine how frequently to chose atom or bond
-        if random.random() < 0.5 or noBonds:
-            # pick a random atom
-            atom = new_env.selectAtom()
-            pick = random.randint(1,6)
-            # TODO: determine how frequently each changetype can occur
-            if pick == 1:
-                # remove atom
-                remove = new_env.removeAtom(atom)
-                return new_env, remove
 
-            elif pick == 2:
-                # atom bound to current atom
-                OR = self.get_atom_OR_type()
-                new = new_env.addAtom(atom, newORtypes = [OR])
-                if new == None:
-                    return new_env, False
-                else:
-                    return new_env, True
-
-            elif pick == 3:
-                # add OR type to this atom
-                OR = self.get_atom_OR_type()
-                atom.addORtype(OR)
-                return new_env, True
-
-            elif pick == 4:
-                # add AND type to this atom
-                atom.addANDtype(random.choice(self.ANDdecorators))
-                return new_env, True
-
-            elif pick == 5:
-                # Remove ORtype
-                ORs = atom.getORtypes()
-                if len(ORs) == 0:
-                    return new_env, False
-                else:
-                    ORs.remove(random.choice(ORs))
-                    atom.setORtypes(ORs)
-                    return new_env, True
-            else:
-                # Remove ANDtype
-                ANDs = atom.getANDtypes()
-                if len(ANDs) == 0:
-                    return new_env, False
-                else:
-                    ANDs.remove(random.choice(ANDs))
-                    atom.setANDtypes(ANDs)
-                    return new_env, True
-
+        # pick to make changes to an atom or bond
+        # TODO: where to put all the smaller probabilities
+        changeAtom = random.choice([True, False], p = [0.9, 0.1])
+        if changeAtom:
+            atom,atom_prob = self.pick_an_atom(new_env)
+            new_env, change_prob = self.changeAtom(new_env, atom, prob)
+            prob = 0.9 * atom_prob * change_prob
         else:
-            # pick a random bond
-            atom1, atom2, bond = new_env.selectBond()
-            pick = random.randint(1,4)
-            if pick == 1:
-                # Add ORtype
-                bond.addORtype(random.choice(self.bondORset))
-                return new_env, True
+            bond, bond_prob = self.pick_a_bond(new_env)
+            new_env, change_prob = self.changeBond(new_env, bond, prob)
+            prob = 0.1 * bond_prob * change_prob
 
-            elif pick == 2:
-                # add ANDtype
-                bond.addANDtype(random.choice(self.bondANDset))
-                return new_env, True
-
-            elif pick == 3:
-                # Remove ORtype
-                ORs = bond.getORtypes()
-                if len(ORs) == 0:
-                    return new_env, False
-                else:
-                    ORs.remove(random.choice(ORs))
-                    bond.setORtypes(ORs)
-                    return new_env, True
-            else:
-                ANDs = bond.getANDtypes()
-                if len(ANDs) == 0:
-                    return new_env, False
-                else:
-                    ANDs.remove(random.choice(ANDs))
-                    bond.setANDtypes(ANDs)
-                    return new_env, True
+        return new_env, prob
 
     def sample_types(self):
         """
