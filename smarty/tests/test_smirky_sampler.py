@@ -7,14 +7,21 @@ import openeye.oechem
 from openeye.oechem import *
 import copy
 import sys # used to exit while testing
+
 # General things
-ORs = ['X1', 'X2', 'X3', 'X4']
-ANDs = ['+0']
+ORs = (['X1', 'X2', 'X3', 'X4'], None)
+ANDs = (['+0'], None)
+bondORs = (['-', '=', '#', ':'], [1,0,0,0])
+bondANDs = ( [''], [1])
+AtomIndexOdds = None
+BondIndexOdds = None
 mol2file = 'molecules/test_filt1_tripos.mol2'
 SMIRFF = "forcefield/Frosst_AlkEtOH.ffxml"
 elements = ["[#%i]" %i for i in range(1,119)]
+elements = (elements, None)
 replacements = None
 molecules = read_molecules(get_data_filename(mol2file), verbose = False)
+outputFile = "test_smirky"
 
 class TestSmirkySampler(TestCase):
     def test_correctVdW(self):
@@ -31,7 +38,7 @@ class TestSmirkySampler(TestCase):
                 [ "[#6X4:1]", 'CT'],
                 [ "[#8X2:1]", 'OS'],
                 [ "[#8X2+0:1]-[#1]", 'OH'] ]
-        sampler = TypeSampler(molecules, typetag, elements, ORs, ANDs, replacements, initialList, SMIRFF, 0.0, False)
+        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
 
         fracfound = sampler.run(2)
         if fracfound < 1.0:
@@ -49,7 +56,7 @@ class TestSmirkySampler(TestCase):
                 [ "[#6X4:1]-[#8;X2;H0:2]", "CT-OS"] ]
 
         typetag = 'Bond'
-        sampler = TypeSampler(molecules, typetag, elements, ORs, ANDs, replacements, initialList, SMIRFF, 0.0, False)
+        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
 
         fracfound = sampler.run(2)
         if fracfound < 1.0:
@@ -68,7 +75,7 @@ class TestSmirkySampler(TestCase):
                 [ "[#6X4:1]-[#8X2:2]-[#6X4:3]", 'CT-OS-CT'] ]
 
         typetag = 'Angle'
-        sampler = TypeSampler(molecules, typetag, elements, ORs, ANDs, replacements, initialList, SMIRFF, 0.0, False)
+        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
 
         fracfound = sampler.run(2)
         if fracfound < 1.0:
@@ -92,11 +99,20 @@ class TestSmirkySampler(TestCase):
                 [ "[#8&X2:1]-[#6&X4:2]-[#6&X4:3]-[#1:4]", 'O-CT-CT-H'],
                 [ "[#1:1]-[#6&X4:2]-[#6&X4:3]-[O&X2:4]", 'H-CT-CT-O'] ]
         typetag = 'Torsion'
-        sampler = TypeSampler(molecules, typetag, elements, ORs, ANDs, replacements, initialList, SMIRFF, 0.0, False)
+        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
 
         fracfound = sampler.run(2)
         if fracfound < 1.0:
             raise Exception("Not finding 100% of AlkEthOH when starting from"
                             " correct Torsion SMIRKS.")
 
+    def test_longRun(self):
+        """
+        Testing torsion sampler with 100 steps
+        """
+        initialList = None
+        typetag = 'Torsion'
+        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
+
+        fracfound = sampler.run(100)
 

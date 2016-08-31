@@ -1,0 +1,46 @@
+% Decorator         Odds
+% Size of smallest ring
+r3                  
+r4                  
+r5                     
+r6                  
+% Number of rings
+R0                  
+R1                  
+R2                  
+R3                  
+R4                  
+R
+!R0                  
+!R1                  
+!R2                  
+!R3                  
+!R4
+!R                  
+% total connectivity
+X1              
+X2              
+X3              
+X4              
+!X1              
+!X2              
+!X3              
+!X4              
+% total hydrogen count
+H0              
+!H0             
+H1       
+!H1       
+H2 
+!H2             
+H3 
+!H3             
+% aromatic/aliphatic
+a  
+!a             
+A 
+!A              
+% charges
+-1              
++0              
++1              
