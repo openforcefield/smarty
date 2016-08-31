@@ -108,7 +108,7 @@ class AtomTyper(object):
 
     def dump(self):
         for pat,type,smarts in self.smartsList:
-            print pat,type,smarts
+            print(pat,type,smarts)
         return
 
     def assignTypes(self,mol):
@@ -132,7 +132,7 @@ class AtomTyper(object):
 
     def debugTypes(self,mol):
         for atom in mol.GetAtoms():
-            print "%6d %8s %8s" % (atom.GetIdx(),OEGetAtomicSymbol(atom.GetAtomicNum()),atom.GetStringData(self.pattyTag))
+            print("%6d %8s %8s" % (atom.GetIdx(),OEGetAtomicSymbol(atom.GetAtomicNum()),atom.GetStringData(self.pattyTag)))
         return
 
     def getTypeList(self,mol):
@@ -173,7 +173,7 @@ class AtomTyper(object):
             if index != -1:
                 line = line[0:index]
             # Split into tokens.
-            tokens = string.split(line)
+            tokens = line.split()
             # Process if we have enough tokens
             if len(tokens) >= 2:
                 smarts = tokens[0]
