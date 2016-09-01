@@ -93,7 +93,7 @@ class TestSmirkySampler(unittest.TestCase):
         removeable = sampler.isremoveable(new_env,atom)
         prob = sampler.add_decorated_atom(new_env,atom)
         prob = sampler.change_atom(new_env, atom)
-        print(self.atom_OR_decors)
+        atom.addORtype('#6', ['X4'])
         prob = sampler.change_ORdecorator(atom, self.atom_OR_decors)
         prob = sampler.change_ORbase(atom, self.atom_OR_bases, self.atom_OR_decors)
         prob = sampler.change_ANDdecorators(atom, self.atom_AND_decors)

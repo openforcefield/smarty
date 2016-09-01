@@ -741,11 +741,12 @@ class FragmentSampler(object):
         """
         new_decor, decor_prob = _PickFromWeightedChoices(decorators)
         currentORs = component.getORtypes()
-        # Pick an ORtype (base, decorators) to make changes to
-        change_OR, base_prob = _PickFromWeightedChoices((currentORs, None))
+        if len(currentORs) > 0:
+            # Pick an ORtype (base, decorators) to make changes to
+            change_OR, base_prob = _PickFromWeightedChoices((currentORs, None))
 
-        # Remove from currentORs to make changes
-        currentORs.remove(change_OR)
+            # Remove from currentORs to make changes
+            currentORs.remove(change_OR)
 
         # get new decorators and add back into the ORtypes list
         new_decs, new_prob = self.add_swap_delete(change_OR[1], new_decor, decor_prob*base_prob, None)
