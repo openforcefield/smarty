@@ -42,7 +42,7 @@ from openeye.oequacpac import *
 import networkx
 import time
 
-from smarty.environment import *
+from  smarty.environment import *
 from smarty.forcefield import *
 from smarty.utils import *
 
@@ -225,31 +225,20 @@ class FragmentSampler(object):
             OEAddExplicitHydrogens(mol)
 
         # if no initialtypes specified make empty bond
-        self.emptyEnv = self.empty_environment(self.typetag)
-        if initialtypes is None:
-            self.envList = [copy.deepcopy(self.emptyEnv)]
-            self.envList[0].label = 0
-        else:
-            self.envList = list()
-            for smirks, typename in initialtypes:
-                env = ChemicalEnvironment(smirks)
-                env.label = typename
-                self.envList.append(env)
-
+        self.emptyEnv = self._makeEnvironments(self.typetag, None)[0]
+        self.envList = self._makeEnvironments(self.typetag, initialtypes)
         self.baseTypes = copy.deepcopy(self.envList)
         # TODO: determine if base types should be a separate input from initial types
 
         # Compute total types being sampled
         self.total_types = 0.0
-        smirks = self.emptyEnv.asSMIRKS()
-        self.IndexDict = dict()
-        for mol in self.molecules:
-            matches  = self.get_SMIRKS_matches(mol, smirks)
-            self.total_types += len(matches)
-            smiles = OEMolToSmiles(mol)
-            self.IndexDict[smiles] = matches
+        empty_typelist = [[self.emptyEnv.asSMIRKS(), 'empty']]
+        [empty_counts, empty_molecule_counts] = self.compute_type_statistics(empty_typelist)
+        self.total_types = empty_counts['empty']
+        self.IndexDict = self.get_typed_molecules(empty_typelist)
 
         # TODO: decide how to handle parent dictionary with environment objects.
+        # This might be better as a graph with unlabeled nodes where the nodes are environment objects?
         self.parents = dict()
 
         # Make typelist to fit method set up
@@ -312,7 +301,7 @@ class FragmentSampler(object):
             self.reference_types = [[smirks, pid] for pid, smirks in self.reference_typename_dict.items()]
 
             if not self.check_typed_molecules(self.reference_types):
-                raise Exception("Reference types in SMIRFF (%s) do not type all %s in the molecules" % (self.SMIRFF, self.typetag))
+                raise Exception("Reference types in SMIRFF (%s) do not type all %ss in the molecules" % (self.SMIRFF, self.typetag))
 
             # Compute current type matches
             [self.type_matches, self.total_type_matches] = self.best_match_reference_types(typelist)
@@ -323,6 +312,34 @@ class FragmentSampler(object):
                     self.reference_type_counts[pid] += 1
             self.write_type_statistics(typelist, typecounts, molecule_typecounts, self.type_matches)
         return
+
+    def _makeEnvironments(self, typetag, smirksList):
+        """
+        Given a typetag and list of SMIRKS strings
+        returns a list of chemical environment objects
+        of the correct type
+        """
+        if typetag.lower() == 'vdw':
+            chemEnv = AtomChemicalEnvironment
+        elif typetag.lower() == 'bond':
+            chemEnv = BondChemicalEnvironment
+        elif typetag.lower() == 'angle':
+            chemEnv = AngleChemicalEnvironment
+        elif typetag.lower() == 'torsion':
+            chemEnv = TorsionChemicalEnvironment
+        elif typetag.lower() == 'improper':
+            chemEnv = ImproperChemicalEnvironment
+        else:
+            return None
+
+        envList = list()
+        if smirksList is None:
+            return [chemEnv(None, 0, self.replacements)]
+
+        for smirks, typename in smirksList:
+            envList.append(chemEnv(smirks, typename, self.replacements))
+
+        return envList
 
     def get_force_type(self, typetag):
         """
@@ -345,28 +362,6 @@ class FragmentSampler(object):
         # TODO: what is the force word for impropers?
         if typetag.lower() == 'improper':
             return 'PeriodicTorsionGenerator'
-        return None
-
-    def empty_environment(self, typetag):
-        """
-        Returns an empty atom, bond, angle, torsion or improper
-
-        Parameters
-        -----------
-        typetag: string, required
-            'vdw', 'bond', 'angle', 'torsion', 'improper'
-            indicates the type of system being sampled
-        """
-        if typetag.lower() == 'vdw':
-            return AtomChemicalEnvironment()
-        if typetag.lower() == 'bond':
-            return BondChemicalEnvironment()
-        if typetag.lower() == 'angle':
-            return AngleChemicalEnvironment()
-        if typetag.lower() == 'torsion':
-            return TorsionChemicalEnvironment()
-        if typetag.lower() == 'improper':
-            return ImproperChemicalEnvironment()
         return None
 
     def get_SMIRKS_matches(self, mol, smirks):
@@ -588,8 +583,12 @@ class FragmentSampler(object):
         Uses AtomIndexOdds to chose an atom
         returns an Atom object and its associated probability
         """
-        descriptor, prob = _PickFromWeightedChoices(self.AtomIndexOdds)
-        atom = env.selectAtom(descriptor)
+        choices = copy.deepcopy(self.AtomIndexOdds)
+        atom = None
+        while atom is None:
+            descriptor,prob = _PickFromWeightedChoices(choices)
+            atom = env.selectAtom(descriptor)
+            choices[1][choices[0].index(descriptor)] = 0
         return atom, prob
 
     def pick_a_bond(self, env):
@@ -597,8 +596,12 @@ class FragmentSampler(object):
         Uses BondIndexOdds to chose a bond
         returns a Bond object and its associated probability
         """
-        descriptor, prob = _PickFromWeightedChoices(self.BondIndexOdds)
-        bond = env.selectBond(descriptor)
+        choices = copy.deepcopy(self.BondIndexOdds)
+        bond = None
+        while bond is None:
+            descriptor, prob = _PickFromWeightedChoices(choices)
+            bond = env.selectBond(descriptor)
+            choices[1][choices[0].index(descriptor)] = 0
         return bond, prob
 
     def add_swap_delete(self, current, new, new_prob, probabilities = None):

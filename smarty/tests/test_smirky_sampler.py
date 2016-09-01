@@ -1,118 +1,106 @@
-from unittest import TestCase
+import unittest
+import smarty
 from smarty.environment import *
 from smarty.sampler_smirky import *
-from smarty.utils import *
+from smarty import utils
 from operator import itemgetter, attrgetter
 import openeye.oechem
 from openeye.oechem import *
 import copy
 import sys # used to exit while testing
 
-# General things
-ORs = (['X1', 'X2', 'X3', 'X4'], None)
-ANDs = (['+0'], None)
-bondORs = (['-', '=', '#', ':'], [1,0,0,0])
-bondANDs = ( [''], [1])
-AtomIndexOdds = None
-BondIndexOdds = None
-mol2file = 'molecules/test_filt1_tripos.mol2'
-SMIRFF = "forcefield/Frosst_AlkEtOH.ffxml"
-elements = ["[#%i]" %i for i in range(1,119)]
-elements = (elements, None)
-replacements = None
-molecules = read_molecules(get_data_filename(mol2file), verbose = False)
-outputFile = "test_smirky"
-
-class TestSmirkySampler(TestCase):
-    def test_correctVdW(self):
+class TestSmirkySampler(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
         """
-        Test 100% score with correct VdW types in AlkEtOH
+        Initialize TestCase and then read in odds from files in smarty/data
         """
-        typetag = 'VdW'
+        unittest.TestCase.__init__(self,*args, **kwargs)
 
-        initialList = [ ["[#1:1]-[#6]", 'HC'],
-                [ "[#1:1]-[#6]-[#7,#8,F,#16,Cl,Br]", 'H1'],
-                [ "[#1:1]-[#6](-[#7,#8,F,#16,Cl,Br])-[#7,#8,F,#16,Cl,Br]", 'H2'],
-                [ "[#1:1]-[#6](-[#7,#8,F,#16,Cl,Br])(-[#7,#8,F,#16,Cl,Br])-[#7,#8,F,#16,Cl,Br]", 'H3'],
-                [ "[#1:1]-[#8]", 'HO'],
-                [ "[#6X4:1]", 'CT'],
-                [ "[#8X2:1]", 'OS'],
-                [ "[#8X2+0:1]-[#1]", 'OH'] ]
-        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
+        self.atom_OR_bases = utils.parse_odds_file("odds_files/atom_OR_bases.smarts" , False)
+        self.atom_OR_decors = utils.parse_odds_file("odds_files/atom_decorators.smarts", False)
+        self.atom_AND_decors = utils.parse_odds_file("odds_files/atom_decorators.smarts", False)
+        self.bond_OR_bases = utils.parse_odds_file("odds_files/bond_OR_bases.smarts", False)
+        self.bond_AND_decors = utils.parse_odds_file("odds_files/bond_AND_decorators.smarts", False)
+        self.atom_odds = utils.parse_odds_file("odds_files/atom_index_odds.smarts", False)
+        self.bond_odds = utils.parse_odds_file("odds_files/bond_index_odds.smarts", False)
+        self.molecules = utils.read_molecules("test_filt1_tripos.mol2", False)
+        self.SMIRFF = "forcefield/Frosst_AlkEtOH.ffxml"
+        self.outputFile = 'test_smirky'
+        replacement_file = utils.get_data_filename("odds_files/substitutions.smarts")
+        self.replacements = smarty.AtomTyper.read_typelist(replacement_file)
+        self.replacements = [ [short, smarts] for [smarts, short] in self.replacements]
 
-        fracfound = sampler.run(2)
-        if fracfound < 1.0:
-            raise Exception("Not finding 100% of AlkEthOH when starting from"
-                            " correct VdW SMIRKS.")
+        self.correctDict = {'VdW': [ ["[#1:1]-[#6]", 'HC'], [ "[#1:1]-[#6]-[#7,#8,F,#16,Cl,Br]", 'H1'], [ "[#1:1]-[#6](-[#7,#8,F,#16,Cl,Br])-[#7,#8,F,#16,Cl,Br]", 'H2'], [ "[#1:1]-[#6](-[#7,#8,F,#16,Cl,Br])(-[#7,#8,F,#16,Cl,Br])-[#7,#8,F,#16,Cl,Br]", 'H3'], [ "[#1:1]-[#8]", 'HO'], [ "[#6X4:1]", 'CT'], [ "[#8X2:1]", 'OS'], [ "[#8X2+0:1]-[#1]", 'OH'] ],
+                'Bond': [ ["[#6X4:1]-[#6X4:2]", 'CT-CT'], [ "[#6X4:1]-[#1:2]", 'CT-H'], [ "[#8:1]~[#1:2]", 'O~H'], [ "[#6X4:1]-[#8;X2;H1:2]", "CT-OH"], [ "[#6X4:1]-[#8;X2;H0:2]", "CT-OS"] ],
+                'Angle': [ [ "[a,A:1]-[#6&X4:2]-[a,A:3]", 'any-CT-any'], [ "[#1:1]-[#6&X4:2]-[#1:3]", "H-CT-H"], [ "[#6&X4:1]-[#6&X4:2]-[#6&X4:3]", 'CT-CT-CT'], [ "[#8&X2:1]-[#6&X4:2]-[#8&X2:3]", 'O-CT-O'], [ "[#6&X4:1]-[#8&X2:2]-[#1:3]", 'CT-OH-HO'], [ "[#6X4:1]-[#8X2:2]-[#6X4:3]", 'CT-OS-CT'] ],
+                'Torsion': [["[a,A:1]-[#6&X4:2]-[#6&X4:3]-[a,A:4]", 'any-CT-CT-any'], [ "[a,A:1]-[#6&X4:2]-[#8&X2:3]-[#1:4]", 'any-CT-OH-HO'], [ "[a,A:1]-[#6&X4:2]-[#8&X2:3]-[!#1:4]", 'any-CT-OS-!H'], [ "[#1:1]-[#6&X4:2]-[#6&X4:3]-[#1:4]", 'H-CT-CT-H'], [ "[#1:1]-[#6&X4:2]-[#6&X4:3]-[#6&X4:4]", 'H-CT-CT-CT'], [ "[#6&X4:1]-[#6&X4:2]-[#8&X2:3]-[#1:4]", 'CT-CT-OH-HO'], [ "[#6&X4:1]-[#6&X4:2]-[#6&X4:3]-[#6&X4:4]", 'CT-CT-CT-CT'], [ "[#6&X4:1]-[#6&X4:2]-[#8&X2:3]-[#6&X4:4]", 'CT-CT-OS-CT'], [ "[#6&X4:1]-[#8&X2:2]-[#6&X4:3]-[O&X2&H0:4]", 'CT-OS-CT-OS'], [ "[#8&X2:1]-[#6&X4:2]-[#6&X4:3]-[#8&X2:4]", 'O-CT-CT-O'], [ "[#8&X2:1]-[#6&X4:2]-[#6&X4:3]-[#1:4]", 'O-CT-CT-H'], [ "[#1:1]-[#6&X4:2]-[#6&X4:3]-[O&X2:4]", 'H-CT-CT-O'] ]}
 
-    def test_correctBonds(self):
+    def test_correct_fragments(self):
         """
-        Test 100% score with correct Bond types in AlkEtOH
+        Test score is 100% if correct VdW, Bond, Angles, or Torsions
+        from AlkEtOH are used as input to the FragmentSampler
         """
-        initialList = [ ["[#6X4:1]-[#6X4:2]", 'CT-CT'],
-                [ "[#6X4:1]-[#1:2]", 'CT-H'],
-                [ "[#8:1]~[#1:2]", 'O~H'],
-                [ "[#6X4:1]-[#8;X2;H1:2]", "CT-OH"],
-                [ "[#6X4:1]-[#8;X2;H0:2]", "CT-OS"] ]
 
-        typetag = 'Bond'
-        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
+        for typetag, initialtypes in self.correctDict.items():
+            sampler = FragmentSampler(self.molecules, typetag,
+                    self.atom_OR_bases, self.atom_OR_decors, self.atom_AND_decors,
+                    self.bond_OR_bases, self.bond_AND_decors, self.atom_odds,
+                    self.bond_odds, self.replacements, initialtypes,
+                    self.SMIRFF, 0.0, self.outputFile)
 
-        fracfound = sampler.run(2)
-        if fracfound < 1.0:
-            raise Exception("Not finding 100% of AlkEthOH when starting from"
-                            " correct Bond SMIRKS.")
+            fracfound = sampler.run(2)
+            self.assertAlmostEqual(fracfound, 1.0, msg = "Not finding 100%% of AlkEthOH when starting from correct %s SMIRKS." % typetag)
 
-    def test_correctAngles(self):
+    def test_random_sampler(self):
         """
-        Test 100% score with correct Angles types in AlkEtOH
+        Test FragmentSampler runs for 10 iterations with no failures
         """
-        initialList = [ [ "[a,A:1]-[#6&X4:2]-[a,A:3]", 'any-CT-any'],
-                [ "[#1:1]-[#6&X4:2]-[#1:3]", "H-CT-H"],
-                [ "[#6&X4:1]-[#6&X4:2]-[#6&X4:3]", 'CT-CT-CT'],
-                [ "[#8&X2:1]-[#6&X4:2]-[#8&X2:3]", 'O-CT-O'],
-                [ "[#6&X4:1]-[#8&X2:2]-[#1:3]", 'CT-OH-HO'],
-                [ "[#6X4:1]-[#8X2:2]-[#6X4:3]", 'CT-OS-CT'] ]
+        typetag = 'Torsion'
+        sampler = FragmentSampler(self.molecules, typetag, self.atom_OR_bases,
+                self.atom_OR_decors, self.atom_AND_decors, self.bond_OR_bases,
+                self.bond_AND_decors, self.atom_odds, self.bond_odds,
+                self.replacements, None, self.SMIRFF, 0.0, self.outputFile)
+        fracfound = sampler.run(10)
 
+
+    def test_sampler_functions(self):
+        """
+        Test fragment sampler functions are working
+        """
         typetag = 'Angle'
-        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
+        sampler = FragmentSampler(self.molecules, typetag, self.atom_OR_bases,
+                self.atom_OR_decors, self.atom_AND_decors, self.bond_OR_bases,
+                self.bond_AND_decors, self.atom_odds, self.bond_odds,
+                self.replacements, None, self.SMIRFF, 0.0, self.outputFile)
 
-        fracfound = sampler.run(2)
-        if fracfound < 1.0:
-            raise Exception("Not finding 100% of AlkEthOH when starting from"
-                            " correct Angle SMIRKS.")
+        typetags = [ ('VdW', 'NonbondedGenerator'),
+                ('Bond', 'HarmonicBondGenerator'),
+                ('Angle', 'HarmonicAngleGenerator'),
+                ('Torsion', 'PeriodicTorsionGenerator'),
+                ('Improper','PeriodicTorsionGenerator'),
+                ('None', None)]
 
-    def test_correctTorsions(self):
-        """
-        Test 100% score with correct Torsions types in AlkEtOH
-        """
-        initialList = [["[a,A:1]-[#6&X4:2]-[#6&X4:3]-[a,A:4]", 'any-CT-CT-any'],
-                [ "[a,A:1]-[#6&X4:2]-[#8&X2:3]-[#1:4]", 'any-CT-OH-HO'],
-                [ "[a,A:1]-[#6&X4:2]-[#8&X2:3]-[!#1:4]", 'any-CT-OS-!H'],
-                [ "[#1:1]-[#6&X4:2]-[#6&X4:3]-[#1:4]", 'H-CT-CT-H'],
-                [ "[#1:1]-[#6&X4:2]-[#6&X4:3]-[#6&X4:4]", 'H-CT-CT-CT'],
-                [ "[#6&X4:1]-[#6&X4:2]-[#8&X2:3]-[#1:4]", 'CT-CT-OH-HO'],
-                [ "[#6&X4:1]-[#6&X4:2]-[#6&X4:3]-[#6&X4:4]", 'CT-CT-CT-CT'],
-                [ "[#6&X4:1]-[#6&X4:2]-[#8&X2:3]-[#6&X4:4]", 'CT-CT-OS-CT'],
-                [ "[#6&X4:1]-[#8&X2:2]-[#6&X4:3]-[O&X2&H0:4]", 'CT-OS-CT-OS'],
-                [ "[#8&X2:1]-[#6&X4:2]-[#6&X4:3]-[#8&X2:4]", 'O-CT-CT-O'],
-                [ "[#8&X2:1]-[#6&X4:2]-[#6&X4:3]-[#1:4]", 'O-CT-CT-H'],
-                [ "[#1:1]-[#6&X4:2]-[#6&X4:3]-[O&X2:4]", 'H-CT-CT-O'] ]
-        typetag = 'Torsion'
-        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
+        for (tag, expected) in typetags:
+            sample_tag = sampler.get_force_type(tag)
+            self.assertEqual(sample_tag, expected, msg = "get_force_type(%s) should return %s, but %s was returned instead" % (tag, expected, sample_tag))
 
-        fracfound = sampler.run(2)
-        if fracfound < 1.0:
-            raise Exception("Not finding 100% of AlkEthOH when starting from"
-                            " correct Torsion SMIRKS.")
+        # Running each method just to make sure they work
+        # get environment
+        env = sampler.envList[0]
+        new_env, prob = sampler.create_new_environment(env)
+        # check atom methods
+        atom,prob = sampler.pick_an_atom(new_env)
+        removeable = sampler.isremoveable(new_env,atom)
+        prob = sampler.add_decorated_atom(new_env,atom)
+        prob = sampler.change_atom(new_env, atom)
+        print(self.atom_OR_decors)
+        prob = sampler.change_ORdecorator(atom, self.atom_OR_decors)
+        prob = sampler.change_ORbase(atom, self.atom_OR_bases, self.atom_OR_decors)
+        prob = sampler.change_ANDdecorators(atom, self.atom_AND_decors)
 
-    def test_longRun(self):
-        """
-        Testing torsion sampler with 100 steps
-        """
-        initialList = None
-        typetag = 'Torsion'
-        sampler = FragmentSampler(molecules, typetag, elements, ORs, ANDs, bondORs, bondANDs, AtomIndexOdds, BondIndexOdds, replacements, initialList, SMIRFF, 0.0, outputFile)
-
-        fracfound = sampler.run(100)
+        # check bond methods
+        bond,prob = sampler.pick_a_bond(new_env)
+        prob = sampler.change_bond(new_env, bond)
+        prob = sampler.change_ORbase(bond, self.bond_OR_bases, sampler.BondORdecorators)
+        prob = sampler.change_ANDdecorators(bond, self.bond_AND_decors)
 
