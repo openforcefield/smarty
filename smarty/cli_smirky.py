@@ -169,9 +169,10 @@ def main():
     if verbose: print("Creating %s sampler took %.3f s" % (option.typetag, elapsed))
 
     # Make iterations
-    fragment_sampler.run(option.iterations, verbose)
+    frac_found = fragment_sampler.run(option.iterations, verbose)
     finished = time.time()
     elapsed = finished - finish_sampler
     per_it = elapsed / float(option.iterations)
     if verbose: print("%i iterations took %.3f s (%.3f s / iteration)" % (option.iterations, elapsed, per_it))
+    if verbose: print("Final score was %.3f%%" % frac_found*100.)
 

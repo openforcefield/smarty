@@ -237,9 +237,13 @@ class FragmentSampler(object):
         self.total_types = empty_counts['empty']
         self.IndexDict = self.get_typed_molecules(empty_typelist)
 
-        # TODO: decide how to handle parent dictionary with environment objects.
         # This might be better as a graph with unlabeled nodes where the nodes are environment objects?
         self.parents = dict()
+        for env in self.envList:
+            self.parents[env.label] = dict()
+            self.parents[env.label]['children'] = list()
+            self.parents[env.label]['SMIRKS'] = env.asSMIRKS()
+            self.parents[env.label]['parent'] = None
 
         # Make typelist to fit method set up
         typelist = [[env.asSMIRKS(), env.label] for env in self.envList]
@@ -858,8 +862,15 @@ class FragmentSampler(object):
                 self.log.write("Typing failed; rejecting.\n")
                 return False
 
-            # update proposed parent dictionary
-            # TODO: update parent dictionary
+            # save parent and children for this type
+            parent = proposed_parents[env.label]['parent']
+            children = proposed_parents[env.label]['children']
+            # update parent dicitonary
+            proposed_parents[parent]['children'] += children
+            proposed_parents[parent]['children'].remove(env.label)
+            for c in children:
+                proposed_parents[c]['parent'] = parent
+            del proposed_parents[env.label]
 
         else: # create new type from chosen environment
             new_env, prob = self.create_new_environment(env)
@@ -906,6 +917,11 @@ class FragmentSampler(object):
 
             # updated proposed parent dictionary
             # TODO: update parent dictionary
+            proposed_parents[env.label]['children'].append(new_env.label)
+            proposed_parents[new_env.label] = {}
+            proposed_parents[new_env.label]['children'] = list()
+            proposed_parents[new_env.label]['parent'] = env.label
+            proposed_parents[new_env.label]['SMIRKS'] = new_env.asSMIRKS()
 
         self.log.write('Proposal is valid...\n')
 
@@ -1066,15 +1082,16 @@ class FragmentSampler(object):
 
         Parameters
         ----------
-        roots = list of smarts strings to print
+        roots = list of typenames to print with this start
+        strart = string to print at beginning of current line
         verbose = boolean, print to commandline
         """
         for r in roots:
-            self.log.write("%s%s\n" % (start, r))
-            if verbose: print("%s%s" % (start, r))
-            if r in self.parents.keys():
-                new_roots = [smart for [smart, name] in self.parents[r]]
-                self.write_parent_tree(new_roots, start+'\t', verbose)
+            branch_string = "%s%s (%s)" % (start,r,self.parents[r]['SMIRKS'])
+            self.log.write("%s\n" % (branch_string))
+            if verbose: print(branch_string)
+            new_roots = self.parents[r]['children']
+            self.write_parent_tree(new_roots, start+'\t', verbose)
 
     def run(self, niterations, verbose = False):
         """
@@ -1114,13 +1131,17 @@ class FragmentSampler(object):
             else:
                 self.log.write("Rejected.")
 
-                # Compute type statistics on molecules.
-                self.write_type_statistics(typelist, typecounts, molecule_typecounts, type_matches=self.type_matches)
-                self.log.write('\n')
+            # Compute type statistics on molecules.
+            self.write_type_statistics(typelist, typecounts, molecule_typecounts, type_matches=self.type_matches)
+            self.log.write('\n')
 
-                # TODO: figure out how to handle parent dictionary with chemical environments
-                # Print parent tree as it is now.
-                self.log.write("%s type hierarchy: will go HERE\n" % self.typetag)
+            # Print parent tree as it is now.
+            self.log.write("%s type hierarchy: \n" % self.typetag)
+            if verbose: print("Current %s type hierarchy:" % self.typetag)
+            roots = [e.label for e in self.baseTypes]
+            self.write_parent_tree(roots, '\t', verbose)
+            self.log.write('\n')
+            if verbose: print('\n')
 
         # Make trajectory file
         f = open("%s.csv" % self.output, 'w')
@@ -1137,6 +1158,7 @@ class FragmentSampler(object):
         fraction_matched = self.write_type_matches(typelist, self.type_matches)
 
         # TODO: update to monitor parent/child hierarchy
-        self.log.write("%s type hierarchy: will go HERE\n" % self.typetag)
-        #self.write_parent_tree(roots, '\t', verbose)
+        self.log.write("%s type hierarchy: \n" % self.typetag)
+        roots = [e.label for e in self.baseTypes]
+        self.write_parent_tree(roots, '\t', verbose)
         return fraction_matched

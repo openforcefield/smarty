@@ -104,3 +104,14 @@ class TestSmirkySampler(unittest.TestCase):
         prob = sampler.change_ORbase(bond, self.bond_OR_bases, sampler.BondORdecorators)
         prob = sampler.change_ANDdecorators(bond, self.bond_AND_decors)
 
+    def test_no_reference_smirff(self):
+        """
+        Test that sampling still works with no reference SMIRFF provided
+        """
+        typetag = 'Bond'
+        sampler = FragmentSampler(self.molecules, typetag, self.atom_OR_bases,
+                self.atom_OR_decors, self.atom_AND_decors, self.bond_OR_bases,
+                self.bond_AND_decors, self.atom_odds, self.bond_odds,
+                self.replacements, None, None, 0.0, self.outputFile)
+        fracfound = sampler.run(10)
+
