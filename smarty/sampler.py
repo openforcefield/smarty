@@ -809,7 +809,6 @@ class AtomTypeSampler(object):
         """
         Save "atom type" matches to be output to trajectory
         This isn't the most elegant solution, but it will make an output file we can read back in
-
         """
         if atomtype_matches is not None:
             reference_type_info = dict()
@@ -858,21 +857,6 @@ class AtomTypeSampler(object):
         # If all of a basetype and it's children match found atoms and reference remove from list
         for [base_smarts, base_typename] in self.used_basetypes:
             includeBase = True
-<<<<<<< HEAD
-            element = re.findall('\d+', base_smarts)[0]
-            if element == self.initial_element:
-                # If the number of atoms matches the references are the same for basetypes and their children
-                # then we have found all reference types for that element and should stop searching that branch
-                if atom_typecounts[base_typename] == reference_counts[base_typename]:
-                    print atom_typecounts[base_typename]
-                    print reference_counts[base_typename]
-                    includeBase = False
-                    for [child_smarts, child_name] in self.parents[base_smarts]:
-                        # If any of the children's atom count and reference count don't agree then these should stay in the unmatched_atomtypes
-                        if not atom_typecounts[child_name] == reference_counts[child_name]:
-                            includeBase = True
-                            break
-=======
 
             # If the number of atoms matches the references are the same for basetypes and their children
             # then we have found all reference types for that element and should stop searching that branch
@@ -884,7 +868,6 @@ class AtomTypeSampler(object):
                         includeBase = True
                         break
 
->>>>>>> ffbb7c64d5248d515eadc1f8a0c747fb92da6118
             # Remove atomtypes from completed element branches
             if not includeBase:
                 print "INclude Base False"
