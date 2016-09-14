@@ -173,6 +173,8 @@ def main():
     finished = time.time()
     elapsed = finished - finish_sampler
     per_it = elapsed / float(option.iterations)
+    print(frac_found)
+    print(type(frac_found))
     if verbose: print("%i iterations took %.3f s (%.3f s / iteration)" % (option.iterations, elapsed, per_it))
-    if verbose: print("Final score was %.3f%%" % frac_found*100.)
+    if verbose: print("Final score was %.3f %%" % (frac_found*100.0))
 
