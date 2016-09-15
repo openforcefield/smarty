@@ -36,7 +36,7 @@ def main():
             --iterations iterations --output outputFile]
 
     example:
-    smirky -molecules AlkEthOH_test_filt1_ff.mol2 --typetag Angle
+    smirky --molecules AlkEthOH_test_filt1_ff.mol2 --typetag Angle
 
     """
     version_string = "%prog %__version__"
@@ -95,7 +95,7 @@ def main():
     parser.add_option("-f", "--initialtypes", metavar='INITIALTYPES',
             action="store", type="string", dest='initialtypes_filename',
             default=None,
-            help="Filename defining initial (first) fragment types as 'SMIRKS    typename'. If this is left blank the initial type will be a generic form of the given fragment, for example '[*:1]~[*:2]' for a bond (OPTIONAL)")
+            help="Filename defining initial fragment types. The file is formatted with two columns: 'SMIRKS    typename'. For the default the initial type will be a generic form of the given fragment, for example '[*:1]~[*:2]' for a bond (OPTIONAL)")
 
     parser.add_option('-r', '--smirff', metavar='REFERENCE',
             action='store', type='string', dest='SMIRFF',
