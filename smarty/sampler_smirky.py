@@ -30,7 +30,6 @@ from optparse import OptionParser # For parsing of command line arguments
 import os
 import math
 import copy
-# TODO: if running in python 2 do we need anything from __future__ ?
 import openeye.oechem
 import openeye.oeomega
 import openeye.oequacpac
@@ -97,12 +96,13 @@ def _OddsToWeights(choices):
     if len(choices) != 2:
         raise Exception("Error: _OddsToWeights(choices) expects 2-tuple (properties, odds)")
 
-    #TODO: require same length at choices[0] and choices[1]
     props = choices[0]
 
     if choices[1] is None:
         current_odds = numpy.ones(len(props))
     else:
+        if len(choices[0]) != len(choices[1]):
+            raise Exception("Error: choices with odds should consist of a 2-tuple ([properties], [odds]) where properties and odds are equal lengths")
         current_odds = numpy.array(choices[1], dtype = np.float)
 
     if len(props) != len(current_odds):
@@ -228,7 +228,6 @@ class FragmentSampler(object):
         self.emptyEnv = self._makeEnvironments(self.typetag, None)[0]
         self.envList = self._makeEnvironments(self.typetag, initialtypes)
         self.baseTypes = copy.deepcopy(self.envList)
-        # TODO: determine if base types should be a separate input from initial types
 
         # Compute total types being sampled
         self.total_types = 0.0
@@ -361,10 +360,7 @@ class FragmentSampler(object):
             return 'HarmonicBondGenerator'
         if typetag.lower() == 'angle':
             return 'HarmonicAngleGenerator'
-        if typetag.lower() == 'torsion':
-            return 'PeriodicTorsionGenerator'
-        # TODO: what is the force word for impropers?
-        if typetag.lower() == 'improper':
+        if typetag.lower() == 'torsion' or typetag.lower() == 'improper':
             return 'PeriodicTorsionGenerator'
         return None
 
@@ -661,7 +657,6 @@ class FragmentSampler(object):
         prob1 = self.change_ORbase(new_atom, self.AtomORbases, self.AtomORdecorators)
         # give bond an ORtype
         bond = env.getBond(atom, new_atom)
-        #TODO: add warning if bond is None?
         prob2 = self.change_ORbase(bond, self.BondORbases, self.BondORdecorators)
         return prob2*prob1
 
@@ -688,7 +683,6 @@ class FragmentSampler(object):
         if len(bond.getORtypes() ) > 1:
             return False
 
-        # TODO: check these conditions
         return True
 
     def change_atom(self, env, atom):
@@ -722,11 +716,9 @@ class FragmentSampler(object):
         move, move_prob = _PickFromWeightedChoices( (opts, probs))
         if move == 0: # remove Atom
             removed = env.removeAtom(atom, False)
-            # TODO: do something if removed = False?
             change_prob = 1.
         elif move == 1: # add Atom
             change_prob = self.add_decorated_atom(env, atom)
-            #TODO: option to add empty atom?
         elif move == 2: # Change ANDdecorators
             change_prob = self.change_ANDdecorators(atom, self.AtomANDdecorators)
         elif move == 3: # Change ORbases
@@ -916,7 +908,6 @@ class FragmentSampler(object):
                     return False
 
             # updated proposed parent dictionary
-            # TODO: update parent dictionary
             proposed_parents[env.label]['children'].append(new_env.label)
             proposed_parents[new_env.label] = {}
             proposed_parents[new_env.label]['children'] = list()
@@ -1149,15 +1140,12 @@ class FragmentSampler(object):
         f.writelines(start + self.traj)
         f.close()
 
-        #TODO: if we want plotted data it should be in a separate function
-
         #Compute final type stats
         typelist = [ [env.asSMIRKS(), env.label] for env in self.envList]
         [self.type_matches, self.total_type_matches] = self.best_match_reference_types(typelist)
         [typecounts, molecule_typecounts] = self.compute_type_statistics(typelist)
         fraction_matched = self.write_type_matches(typelist, self.type_matches)
 
-        # TODO: update to monitor parent/child hierarchy
         self.log.write("%s type hierarchy: \n" % self.typetag)
         roots = [e.label for e in self.baseTypes]
         self.write_parent_tree(roots, '\t', verbose)
