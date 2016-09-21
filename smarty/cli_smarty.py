@@ -39,7 +39,7 @@ def main():
                       
     parser.add_option("-e", "--element", metavar='ELEMENT',
                       action="store", type="string", dest='element', default=None,
-                      help="If you choose sampler elemental, you have to choose one element to search (number format, such as Oxygen = 8, Carbon = 6 and so on).")
+                      help="If you choose sampler elemental, you have to choose one element to search (using the atomic number, i.e. --element=8 for oxygen or --elment=6 for carbon, etc).")
 
     parser.add_option("-b", "--basetypes", metavar='BASETYPES',
                       action="store", type="string", dest='basetypes_filename', default=None,
