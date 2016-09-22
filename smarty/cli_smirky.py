@@ -31,7 +31,7 @@ def main():
             --atomANDdecors AtomANDdecorFile --bondORbase BondORbaseFile
             --bondANDdecors BondANDdecorFile --atomIndexOdds AtomIndexFile
             --bondIndexOdds BondIndexFile --replacements substitutions
-            --initialFragments initialFragments --SMIRFF referenceSMIRFF
+            --initialtypes initialFragmentsFile --SMIRFF referenceSMIRFF
             --temperature float --verbose verbose
             --iterations iterations --output outputFile]
 
