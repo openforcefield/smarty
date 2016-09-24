@@ -111,7 +111,7 @@ class AtomTyper(object):
             print(pat,type,smarts)
         return
 
-    def assignTypes(self,mol):
+    def assignTypes(self,mol,samplertype="original"):
         # Assign null types.
         for atom in mol.GetAtoms():
             atom.SetStringData(self.pattyTag, "")
@@ -125,9 +125,10 @@ class AtomTyper(object):
                     matchpair.target.SetStringData(self.pattyTag,type)
 
         # Check if any atoms remain unassigned.
-        #for atom in mol.GetAtoms():
-        #    if atom.GetStringData(self.pattyTag)=="":
-        #        raise AtomTyper.TypingException(mol, atom)
+        if samplertype == "original":
+            for atom in mol.GetAtoms():
+                if atom.GetStringData(self.pattyTag)=="":
+                    raise AtomTyper.TypingException(mol, atom)
         return
 
     def debugTypes(self,mol):
