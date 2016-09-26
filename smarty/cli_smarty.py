@@ -32,6 +32,14 @@ def main():
     """
     version_string = "%prog %__version__"
     parser = OptionParser(usage=usage_string, version=version_string)
+    
+    parser.add_option("-y", "--samplertype", metavar='SAMPLER_TYPE',
+                      action="store", type="string", dest='sampler_type', default='original',
+                      help="Choose between original or elemental sampler search (default = original).")
+                      
+    parser.add_option("-e", "--element", metavar='ELEMENT',
+                      action="store", type="string", dest='element', default=None,
+                      help="If you choose sampler elemental, you have to choose one element to search (using the atomic number, i.e. --element=8 for oxygen or --elment=6 for carbon, etc).")
 
     parser.add_option("-b", "--basetypes", metavar='BASETYPES',
                       action="store", type="string", dest='basetypes_filename', default=None,
@@ -88,6 +96,11 @@ def main():
         parser.print_help()
         parser.error("All input files must be specified.")
     
+    # Ensure the Sampler Type option has been specified right
+    if not (options.sampler_type == 'original' or options.sampler_type == 'elemental'):
+        parser.print_help()
+        parser.error("Option not valid for sampler type.")
+
     # Ensure the Decorator Behavior option has been specified right
     if not (options.decorator_behavior == 'simple-decorators' or options.decorator_behavior == 'combinatorial-decorators'):
         parser.print_help()
@@ -103,7 +116,14 @@ def main():
         reference_typed_molecules = smarty.utils.read_molecules(options.reference_molecules_filename, verbose=True)
 
     # Construct atom type sampler.
-    atomtype_sampler = smarty.AtomTypeSampler(molecules, options.basetypes_filename, options.initialtypes_filename, options.decorators_filename, replacements_filename=options.substitutions_filename, reference_typed_molecules=reference_typed_molecules, verbose=verbose, temperature=options.temperature, decorator_behavior=options.decorator_behavior)
+    if options.sampler_type == "elemental":
+        # Check for element
+        if options.element == None:
+            parser.print_help()
+            parser.error("You need to specify the element number.")
+        atomtype_sampler = smarty.AtomTypeSamplerElemental(molecules, options.basetypes_filename, options.initialtypes_filename, options.decorators_filename, replacements_filename=options.substitutions_filename, reference_typed_molecules=reference_typed_molecules, verbose=verbose, temperature=options.temperature, decorator_behavior=options.decorator_behavior, element=options.element)
+    else:
+        atomtype_sampler = smarty.AtomTypeSampler(molecules, options.basetypes_filename, options.initialtypes_filename, options.decorators_filename, replacements_filename=options.substitutions_filename, reference_typed_molecules=reference_typed_molecules, verbose=verbose, temperature=options.temperature, decorator_behavior=options.decorator_behavior)
 
     # Start sampling atom types.
     atomtype_sampler.run(options.iterations, options.traj_file, options.plot_file)
