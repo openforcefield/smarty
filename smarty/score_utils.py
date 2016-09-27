@@ -1,4 +1,5 @@
 import numpy
+import pandas as pd
 
 def load_trajectory( trajFile):
     """Load data from a specified smarty trajectory .csv file and return a summary.
@@ -7,7 +8,7 @@ def load_trajectory( trajFile):
 
     Parameters
     ----------
-    
+
         trajFile (str) : filename to read from
 
     Returns
@@ -16,69 +17,58 @@ def load_trajectory( trajFile):
             Dictionary, keyed by iteration, storing the state at each iteration
             Subsequent keys are by reference atom types, i.e. timeseries[1]['HO']
             gives data at step 1 on what (if anything) matches 'HO'. Subsequent
-            keys are 'smarts', 'matches', 'molecules', 'atomsmatched', 'index' (serial # 
+            keys are 'smarts', 'matches', 'molecules', 'atomsmatched', 'index' (serial #
             of match), `ParNum` (parent number), `ParentParNum` (parent of parent)
             `denominator` (number of possible matches of this type), `fraction`
             (fraction of this type matched).
 
-
-    TO DO: Shift to pandas data frame 
     """
-
-    file = open(trajFile, 'r')
-    header = file.readline()
-    tmp = header.split(',')
-    
+    data = pd.read_csv(trajFile, quotechar="'")
+    data_dict = data.to_dict()
     # If the number if headers is not as expected, this is a different version and we can't parse
-    if len(tmp) != 10:
+    if len(data.columns) != 10:
         raise Exception("Number of headers in trajectory not as expected; can't parse.")
-
-    # Read rest of file
-    text = file.readlines()
 
     # Initialize storage
     timeseries = {}
 
-    # How many iterations are we looking at?
-    lastline_elements = text[-1].split(',')
-    max_its = int( lastline_elements[0])
     # Number of lines
-    max_lines = len(text)
+    max_lines = data.index[-1]
 
-    
-    # Process file    
-    linenr = 0
-    while linenr < max_lines:
-        line_elements = text[linenr].split(',')
-        iteration = int(line_elements[0])
+    # How many iterations are we looking at?
+    max_its = data.Iteration[max_lines]
+
+    keys = list(data.columns)
+    keys.remove('RefType')
+    keys.remove('Iteration')
+
+    numerator = data.columns[-2].lower()
+    denominator = data.columns[-1].lower()
+    # Process file
+    for linenr in data.index:
+        iteration = data.Iteration[linenr]
 
         # Pull elements from line and store
-        if not timeseries.has_key( iteration): timeseries[iteration] = {} 
-        reftype = line_elements[5]
+        if not timeseries.has_key( iteration): timeseries[iteration] = {}
+        reftype = data.RefType[linenr]
 
         if not reftype=="'NONE'":
             timeseries[iteration][reftype]={}
-            timeseries[iteration][reftype]['smarts'] = line_elements[2]
-            timeseries[iteration][reftype]['index'] = int(line_elements[1])
-            timeseries[iteration][reftype]['ParNum'] = int(line_elements[3])
-            timeseries[iteration][reftype]['ParentParNum'] = int(line_elements[4])
-            timeseries[iteration][reftype]['matches'] = int(line_elements[6])
-            timeseries[iteration][reftype]['molecules'] = int(line_elements[7])
-            timeseries[iteration][reftype]['atomsmatched'] = int(line_elements[8])
-            timeseries[iteration][reftype]['denominator'] = int(line_elements[9])
+            for k in keys:
+                if k in ['ParNum', 'ParentParNum']:
+                    timeseries[iteration][reftype][k] = data_dict[k][linenr]
+                else:
+                    timeseries[iteration][reftype][k.lower()] = data_dict[k][linenr]
             try:
-                timeseries[iteration][reftype]['fraction'] = timeseries[iteration][reftype]['atomsmatched']/float(timeseries[iteration][reftype]['denominator'])
+                timeseries[iteration][reftype]['fraction'] = timeseries[iteration][reftype][numerator]/float(timeseries[iteration][reftype][denominator])
             except ZeroDivisionError:
                 print("At iteration %s, found %s matched atoms and a denominator of %s for reftype %s..." % (iteration, timeseries[iteration][reftype]['atomsmatched'], timeseries[iteration][reftype]['denominator'], reftype))
-                raise 
-
-        linenr+=1
-
+                raise
 
     return timeseries
 
-
-def scores_vs_time(timeseries):
+def scores_vs_time(timeseries, numerator = 'atomsmatched'
+        ):
     """Process a timeseries as read by load_trajectory and return the fraction of each reference atom type found at each time.
 
 
@@ -90,7 +80,7 @@ def scores_vs_time(timeseries):
     Returns
     -------
     time_fractions : dict
-        Dictionary of NumPy arrays, keyed by reference type. 
+        Dictionary of NumPy arrays, keyed by reference type.
         The full score across all types is under `all`.
 
     """
@@ -111,7 +101,7 @@ def scores_vs_time(timeseries):
     for reftype in reftypes:
         time_fractions[reftype] = numpy.zeros( max_its, float)
 
-    
+
     # Update with data
     for it in range(max_its):
         # Update reference types occuring at this iteration
@@ -126,11 +116,46 @@ def scores_vs_time(timeseries):
                     print("Available keys:", timeseries[it][reftype].keys())
                 #print("%s, %s - %s" % (it, reftype, timeseries[it][reftype]['denominator']))
                 denom += timeseries[it][reftype]['matches']
-                numer += timeseries[it][reftype]['atomsmatched']
-                
+                numer += timeseries[it][reftype][numerator]
+
             # Any reference type which does not appear at this time point has zero matches so we just leave the value at zero
-        
+
         # Handle 'all' case last
         time_fractions['all'][it] = numer/float(denom)
 
     return time_fractions
+
+def create_plot_file(trajFile, plot_filename, plot_others=False):
+    """
+    Creates plot to demonstrate performance of smarty or smirky
+
+    trajFile - csv file generated by smarty, smarty_elemental, or smirky
+    plot_filename - pdf to save plot file to
+    plot_others - if True plots data for all reftypes separately, optional
+    """
+    import pylab as pl
+    data = pd.read_csv(trajFile, quotechar="'")
+    numerator = data.columns[-2].lower()
+
+    timeseries = load_trajectory(trajFile)
+    time_fractions = scores_vs_time(timeseries, numerator)
+
+    # plot overall score
+    pl.plot( time_fractions['all'], 'k-', linewidth = 2.0)
+
+    if plot_others:
+        reftypes = time_fractions.keys()
+        reftypes.remove('all')
+
+        # Plot scors for individual types
+        for reftype in reftypes:
+            pl.plot(time_fractions[reftype])
+
+        pl.legend(['all']+reftypes, loc='lower right')
+
+    pl.xlabel('Iterations')
+    pl.ylabel('Fraction of reference type found')
+    pl.ylim(-0.1, 1.1)
+
+    pl.savefig(plot_filename)
+

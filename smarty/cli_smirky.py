@@ -8,6 +8,7 @@ import string
 import time
 
 from optparse import OptionParser # For parsing of command line arguments
+import smarty
 
 import os
 import math
@@ -15,8 +16,6 @@ import copy
 import re
 import numpy
 from numpy import random
-
-import smarty
 
 def main():
     # Create command-line argument options.
@@ -149,6 +148,9 @@ def main():
     else:
         initialtypes = smarty.AtomTyper.read_typelist(option.initialtypes_filename)
 
+    output = option.outputfile
+    if output is None:
+        output = "%s_%.2e" % ( option.typetag, option.temperature)
     # get replacements
     if option.substitutions_filename is None:
         sub_file = smarty.get_data_filename('odds_files/substitutions.smarts')
@@ -162,7 +164,7 @@ def main():
             molecules, option.typetag, atom_OR_bases, atom_OR_decorators,
             atom_AND_decorators, bond_OR_bases, bond_AND_decorators,
             atom_odds, bond_odds, replacements, initialtypes,
-            option.SMIRFF, option.temperature, option.outputfile)
+            option.SMIRFF, option.temperature, output)
     # report time
     finish_sampler = time.time()
     elapsed = finish_sampler - start_sampler
@@ -176,3 +178,7 @@ def main():
     if verbose: print("%i iterations took %.3f s (%.3f s / iteration)" % (option.iterations, elapsed, per_it))
     if verbose: print("Final score was %.3f %%" % (frac_found*100.0))
 
+    # plot results
+    plot_file = "%s.pdf" % output
+    traj = "%s.csv" % output
+    smarty.score_utils.create_plot_file(traj, plot_file, False)
