@@ -226,15 +226,29 @@ class FragmentSampler(object):
 
         # if no initialtypes specified make empty bond
         self.emptyEnv = self._makeEnvironments(self.typetag, None)[0]
-        self.envList = self._makeEnvironments(self.typetag, initialtypes)
-        self.baseTypes = copy.deepcopy(self.envList)
 
         # Compute total types being sampled
-        self.total_types = 0.0
         empty_typelist = [[self.emptyEnv.asSMIRKS(), 'empty']]
         [empty_counts, empty_molecule_counts] = self.compute_type_statistics(empty_typelist)
         self.total_types = empty_counts['empty']
         self.IndexDict = self.get_typed_molecules(empty_typelist)
+
+        temp_envList = self._makeEnvironments(self.typetag, initialtypes)
+        self.envList = list()
+        # Make typelist to fit method set up
+        typelist = [[env.asSMIRKS(), env.label] for env in temp_envList]
+
+        # check that current smirks match all types in self.molecules
+        if not self.check_typed_molecules(typelist):
+            raise Exception("Initial types do not type all %s in the molecules" % self.typetag)
+
+        [typecounts, molecule_typecounts] = self.compute_type_statistics(typelist)
+        self.write_type_statistics(typelist, typecounts, molecule_typecounts)
+        # Only keep fragments that are initially populated
+        for env in temp_envList:
+            if typecounts[env.label] > 0:
+                self.envList.append(copy.deepcopy(env))
+        self.baseTypes = copy.deepcopy(self.envList)
 
         # This might be better as a graph with unlabeled nodes where the nodes are environment objects?
         self.parents = dict()
@@ -243,16 +257,6 @@ class FragmentSampler(object):
             self.parents[env.label]['children'] = list()
             self.parents[env.label]['SMIRKS'] = env.asSMIRKS()
             self.parents[env.label]['parent'] = None
-
-        # Make typelist to fit method set up
-        typelist = [[env.asSMIRKS(), env.label] for env in self.envList]
-
-        # check that current smirks match all types in self.molecules
-        if not self.check_typed_molecules(typelist):
-            raise Exception("Initial types do not type all %s in the molecules" % self.typetag)
-
-        [typecounts, molecule_typecounts] = self.compute_type_statistics(typelist)
-        self.write_type_statistics(typelist, typecounts, molecule_typecounts)
 
         # Store elements without the [ ]
         self.AtomORbases = ( [], [])
@@ -704,8 +708,12 @@ class FragmentSampler(object):
         # start with OR base change opt = 3
         opts = [3]
         probs = [3]
-        # if atom is not beta, add atom is allowed
-        if not env.isBeta(atom):
+        # In order to have add_atom as an allowed option,
+        # The current atom must have at least one decorator and be not Beta
+        decorated = (len(atom.getORtypes()) > 0 or len(atom.getANDtypes()) > 0)
+        if (not env.isBeta(atom)) and decorated:
+            ORs = [o[0]+''.join(o[1]) for o in atom.getORtypes()]
+            ANDs = ';'.join(atom.getANDtypes())
             opts.append(1)
             probs.append(5)
         # check if removeable
