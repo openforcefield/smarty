@@ -125,7 +125,7 @@ def scores_vs_time(timeseries, numerator = 'atomsmatched'
 
     return time_fractions
 
-def create_plot_file(trajFile, plot_filename, plot_others=False):
+def create_plot_file(trajFile, plot_filename, plot_others=False, verbose = False):
     """
     Creates plot to demonstrate performance of smarty or smirky
 
@@ -140,6 +140,8 @@ def create_plot_file(trajFile, plot_filename, plot_others=False):
     timeseries = load_trajectory(trajFile)
     time_fractions = scores_vs_time(timeseries, numerator)
 
+    max_score = max(time_fractions['all']) *100.0
+    if verbose: print("Maximum score was %.1f %%" % max_score)
     # plot overall score
     pl.plot( time_fractions['all'], 'k-', linewidth = 2.0)
 
