@@ -712,8 +712,6 @@ class FragmentSampler(object):
         # The current atom must have at least one decorator and be not Beta
         decorated = (len(atom.getORtypes()) > 0 or len(atom.getANDtypes()) > 0)
         if (not env.isBeta(atom)) and decorated:
-            ORs = [o[0]+''.join(o[1]) for o in atom.getORtypes()]
-            ANDs = ';'.join(atom.getANDtypes())
             opts.append(1)
             probs.append(5)
         # check if removeable
