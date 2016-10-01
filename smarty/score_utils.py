@@ -67,8 +67,7 @@ def load_trajectory( trajFile):
 
     return timeseries
 
-def scores_vs_time(timeseries, numerator = 'atomsmatched'
-        ):
+def scores_vs_time(timeseries, numerator = 'fractionmatched'):
     """Process a timeseries as read by load_trajectory and return the fraction of each reference atom type found at each time.
 
 
