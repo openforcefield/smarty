@@ -81,7 +81,7 @@ class TestSmirkySampler(unittest.TestCase):
                 ('None', None)]
 
         for (tag, expected) in typetags:
-            sample_tag = sampler.get_force_type(tag)
+            sample_tag, edges, sym_odds = sampler.get_type_info(tag)
             self.assertEqual(sample_tag, expected, msg = "get_force_type(%s) should return %s, but %s was returned instead" % (tag, expected, sample_tag))
 
         # Running each method just to make sure they work
