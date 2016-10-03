@@ -1149,7 +1149,11 @@ class FragmentSampler(object):
             index += 1
         # add totals to the reference count
         nmolecules = len(self.molecules)
-        output.append("-1,'total','all','None','all',%i,%i,%i,%i" % (ntypes,nmolecules,self.total_type_matches, self.total_types))
+        if type_matches is None:
+            output.append("-1,'total','all','None','all',%i,%i,0,0" % (ntypes, nmolecules))
+        else:
+            output.append("-1,'total','all','None','all',%i,%i,%i,%i" % (ntypes,nmolecules,self.total_type_matches, self.total_types))
+
         return output
 
     def write_parent_tree(self, roots, start='', verbose=False):
