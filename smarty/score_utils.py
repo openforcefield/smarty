@@ -15,10 +15,11 @@ def load_trajectory( trajFile):
     -------
         timeseries (dict) : status by iteration number
             Dictionary, keyed by iteration, storing the state at each iteration
-            Subsequent keys are by reference atom types, i.e. timeseries[1]['HO']
+            Subsequent keys are by reference types, (i.e. timeseries[1]['HO'])
+            and an entry for total if included in the trajectory file at timeseries[1]['total']
             gives data at step 1 on what (if anything) matches 'HO'. Subsequent
-            keys are 'smarts', 'matches', 'molecules', 'atomsmatched', 'index' (serial #
-            of match), `ParNum` (parent number), `ParentParNum` (parent of parent)
+            keys are 'smarts', 'matches', 'molecules', 'fractionmatched', 'index' (serial #
+            of match), `ParNum` (parameter number/label), `ParentParNum` (parameter number/label of parent)
             `denominator` (number of possible matches of this type), `fraction`
             (fraction of this type matched).
 
@@ -62,12 +63,12 @@ def load_trajectory( trajFile):
             try:
                 timeseries[iteration][reftype]['fraction'] = timeseries[iteration][reftype][numerator]/float(timeseries[iteration][reftype][denominator])
             except ZeroDivisionError:
-                print("At iteration %s, found %s matched atoms and a denominator of %s for reftype %s..." % (iteration, timeseries[iteration][reftype]['atomsmatched'], timeseries[iteration][reftype]['denominator'], reftype))
+                print("At iteration %s, found %s matched atoms and a denominator of %s for reftype %s..." % (iteration, timeseries[iteration][reftype][numerator], timeseries[iteration][reftype][denominator], reftype))
                 raise
 
     return timeseries
 
-def scores_vs_time(timeseries, numerator = 'atomsmatched'
+def scores_vs_time(timeseries, numerator = 'fractionmatched'
         ):
     """Process a timeseries as read by load_trajectory and return the fraction of each reference atom type found at each time.
 
@@ -82,7 +83,7 @@ def scores_vs_time(timeseries, numerator = 'atomsmatched'
     time_fractions : dict
         Dictionary of NumPy arrays, keyed by reference type.
         The full score across all types is under `all`.
-
+            'all' is from the total list if available or calculated from other references
     """
 
     # How many iterations are present?
@@ -95,12 +96,15 @@ def scores_vs_time(timeseries, numerator = 'atomsmatched'
             if reftype not in reftypes:
                  reftypes.add(reftype)
 
+    hastotal = 'total' in reftypes
+    if hastotal:
+        reftypes.remove('total')
     # Allocate storage
     time_fractions = {}
     time_fractions['all'] = numpy.zeros( max_its, float)
     for reftype in reftypes:
-        time_fractions[reftype] = numpy.zeros( max_its, float)
-
+        if reftype != 'total':
+            time_fractions[reftype] = numpy.zeros( max_its, float)
 
     # Update with data
     for it in range(max_its):
@@ -114,14 +118,16 @@ def scores_vs_time(timeseries, numerator = 'atomsmatched'
                 except KeyError:
                     print("Can't find key set %s, %s, %s for timeseries." % (it, reftype, 'fraction'))
                     print("Available keys:", timeseries[it][reftype].keys())
-                #print("%s, %s - %s" % (it, reftype, timeseries[it][reftype]['denominator']))
-                denom += timeseries[it][reftype]['matches']
+                denom += timeseries[it][reftype]['denominator']
                 numer += timeseries[it][reftype][numerator]
 
             # Any reference type which does not appear at this time point has zero matches so we just leave the value at zero
 
         # Handle 'all' case last
-        time_fractions['all'][it] = numer/float(denom)
+        if hastotal:
+            time_fractions['all'][it] = timeseries[it]['total']['fraction']
+        else:
+            time_fractions['all'][it] = numer/float(denom)
 
     return time_fractions
 

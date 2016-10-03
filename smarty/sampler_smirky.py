@@ -45,10 +45,6 @@ from  smarty.environment import *
 from smarty.forcefield import *
 from smarty.utils import *
 
-# Currently not used
-from smarty.score_utils import load_trajectory
-from smarty.score_utils import scores_vs_time
-
 import numpy
 from numpy import random
 # ==============================================================================
@@ -199,7 +195,7 @@ class FragmentSampler(object):
         self.replacements = replacements
         self.types_with_no_matches = []
 
-        if outputFile == None:
+        if outputFile is None:
             self.output = "%s_%.2e" % (typetag, temperature)
         else:
             self.output = outputFile
@@ -217,7 +213,9 @@ class FragmentSampler(object):
         if not typetag.lower() in ['bond', 'angle', 'torsion','improper','vdw']:
             raise Exception("Error typetag %s is not recognized, please use 'Bond', 'Angle', 'Torsion', 'Improper', or 'VdW' ")
         self.typetag = typetag
-        self.forcetype = self.get_force_type(self.typetag)
+
+        # get information based on typetag
+        self.forcetype, self.edges, self.sym_odds = self.get_type_info(self.typetag)
 
         # get molecules and add explicit hydrogens
         self.molecules = copy.deepcopy(molecules)
@@ -348,7 +346,7 @@ class FragmentSampler(object):
 
         return envList
 
-    def get_force_type(self, typetag):
+    def get_type_info(self, typetag):
         """
         Uses typetag to get the Force type key word used to read the SMIRFF file
 
@@ -357,16 +355,31 @@ class FragmentSampler(object):
         typetag: string, required
             'vdw', 'bond', 'angle', 'torsion', 'improper'
             indicates the type of system being sampled
+
+        Returns
+        ------------
+        force - term used in forcefield objects
+        edges - edges of fragments, for example [1,3] for angle
+        sym_odds - odds of the edges being identical, based on smirff99Frosst version 1.0.1
         """
+        force = None
+        edges = []
+        sym_odds = ([True, False], [1,1])
         if typetag.lower() == 'vdw':
-            return 'NonbondedGenerator'
+            force = 'NonbondedGenerator'
         if typetag.lower() == 'bond':
-            return 'HarmonicBondGenerator'
+            force = 'HarmonicBondGenerator'
+            edges = [1,2]
+            sym_odds = ([True, False], [1,5])
         if typetag.lower() == 'angle':
-            return 'HarmonicAngleGenerator'
+            force = 'HarmonicAngleGenerator'
+            edges = [1,3]
+            sym_odds = ([True, False], [3,2])
         if typetag.lower() == 'torsion' or typetag.lower() == 'improper':
-            return 'PeriodicTorsionGenerator'
-        return None
+            force = 'PeriodicTorsionGenerator'
+            if typetag.lower() == 'torsion':
+                edges = [1,4]
+        return force, edges, sym_odds
 
     def get_SMIRKS_matches(self, mol, smirks):
         """
@@ -697,6 +710,35 @@ class FragmentSampler(object):
 
         return True
 
+    def _is_symmetric(self, env):
+        """
+        Returns true if environment is currently symmetric,
+        meaning changes can be made to the outer parts of the
+        fragment identically
+        """
+        # if there are unindexed atoms we will assume the environment is no longer symmetric
+        if len(env.getUnindexedAtoms()) > 0:
+            return False
+
+        # check current atom edges
+        atom1 = env.selectAtom(self.edges[0])
+        atom2 = env.selectAtom(self.edges[1])
+        if atom1.asSMARTS() != atom2.asSMARTS():
+            return False
+
+        # if looking at Bonds stop here
+        if self.typetag.lower() == 'bond':
+            return True
+
+        # otherwise, check bonds are also symmetric
+        bond1 = env.selectBond(self.edges[0])
+        bond2 = env.selectBond(self.edges[1] - 1)
+        if bond1.asSMARTS() != bond2.asSMARTS():
+            return False
+
+        # passes all checks
+        return True
+
     def change_atom(self, env, atom):
         """
         Makes changes to the provided Atom object
@@ -704,6 +746,13 @@ class FragmentSampler(object):
         returns the probability of making this change
             if 0 no change was made
         """
+        # Check if symmetric
+        symmetric_change = False
+        sym_change_odds = 1
+        if atom.index in self.edges:
+            if self._is_symmetric(env):
+                symmetric_change, sym_change_odds = _PickFromWeightedChoices(self.sym_odds)
+
         # assign options and probabilities:
         # start with OR base change opt = 3
         opts = [3]
@@ -733,17 +782,26 @@ class FragmentSampler(object):
         if move == 0: # remove Atom
             removed = env.removeAtom(atom, False)
             change_prob = 1.
+            return move_prob * change_prob
         elif move == 1: # add Atom
             change_prob = self.add_atom(env, atom)
+            return move_prob * change_prob
         elif move == 2: # Change ANDdecorators
             change_prob = self.change_ANDdecorators(atom, self.AtomANDdecorators)
         elif move == 3: # Change ORbases
             change_prob = self.change_ORbase(atom, self.AtomORbases, self.AtomORdecorators)
-
         else: # move == 4 Change ORdecorators
             change_prob = self.change_ORdecorator(atom, self.AtomORdecorators)
 
-        return move_prob * change_prob
+        if symmetric_change: # make changes to mirrored atom
+            temp_edges = copy.deepcopy(self.edges)
+            temp_edges.remove(atom.index)
+            atom2_index = temp_edges[0]
+            atom2 = env.selectAtom(atom2_index)
+            atom2.setORtypes(atom.getORtypes())
+            atom2.setANDtypes(atom.getANDtypes())
+
+        return move_prob * change_prob * sym_change_odds
 
     def change_ORdecorator(self, component, decorators):
         """
@@ -798,6 +856,7 @@ class FragmentSampler(object):
         Makes changes to the Bond object
         returns probability of making change
         """
+        #TODO: if symmetry in change_atom works for AlkEtOH, figure out how to handle bonds
         # Can only make changes to the bond OR or AND types
         changeOR = random.choice([True, False], p = [0.7, 0.3])
         if changeOR:
@@ -1071,19 +1130,25 @@ class FragmentSampler(object):
         output = []
         # Print counts
         # INDEX, SMARTS, PARENT INDEX, REF TYPE, MATCHES, MOLECULES, FRACTION, OUT of, PERCENTAGE
+        ntypes = 0
         for [smarts, typename] in typelist:
+            parent = str(self.parents[typename]['parent'])
             if type_matches is not None:
                 (reference_typename, reference_count) = reference_type_info[typename]
                 if reference_typename is not None:
                     reference_total = self.reference_type_counts[reference_typename]
                     # Save output
-                    output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, reference_typename, typecounts[typename], molecule_typecounts[typename], reference_count, reference_total))
+                    output.append("%i,'%s','%s','%s','%s',%i,%i,%i,%i" % (index, smarts, typename, parent, reference_typename, typecounts[typename], molecule_typecounts[typename], reference_count, reference_total))
                 else:
-                    output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, 'NONE', typecounts[typename], molecule_typecounts[typename], 0, 0))
+                    output.append("%i,'%s','%s','%s','%s',%i,%i,%i,%i" % (index, smarts, typename, parent, 'NONE', typecounts[typename], molecule_typecounts[typename], 0, 0))
 
             else:
-                output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, 0, 0, 'NONE', typecounts[typename], molecule_typecounts[typename], 0, 0))
+                output.append("%i,'%s','%s','%s','%s',%i,%i,%i,%i" % (index, smarts, typename, parent, 'NONE', typecounts[typename], molecule_typecounts[typename], 0, 0))
+            ntypes += typecounts[typename]
             index += 1
+        # add totals to the reference count
+        nmolecules = len(self.molecules)
+        output.append("%i,'%s','%s','%s','%s',%i,%i,%i,%i" % (0,'total','all','None','total',ntypes,nmolecules,self.total_type_matches, self.total_types))
         return output
 
     def write_parent_tree(self, roots, start='', verbose=False):
