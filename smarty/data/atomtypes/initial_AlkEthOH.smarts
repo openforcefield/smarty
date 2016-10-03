@@ -6,4 +6,4 @@
 [#1$(*-[#8])]   hydrogen-oxygen
 [#6X4]  carbon-tet
 [#8X2]  oxygen-dival
-[OX2+0$(*-[#1])]    oxygen-hydrogen
+[#8X2+0$(*-[#1])]    oxygen-hydrogen
