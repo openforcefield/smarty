@@ -379,6 +379,7 @@ class FragmentSampler(object):
             force = 'PeriodicTorsionGenerator'
             if typetag.lower() == 'torsion':
                 edges = [1,4]
+                sym_odds = ([True, False], [15, 100])
         return force, edges, sym_odds
 
     def get_SMIRKS_matches(self, mol, smirks):
@@ -1148,7 +1149,7 @@ class FragmentSampler(object):
             index += 1
         # add totals to the reference count
         nmolecules = len(self.molecules)
-        output.append("%i,'%s','%s','%s','%s',%i,%i,%i,%i" % (0,'total','all','None','total',ntypes,nmolecules,self.total_type_matches, self.total_types))
+        output.append("-1,'total','all','None','all',%i,%i,%i,%i" % (ntypes,nmolecules,self.total_type_matches, self.total_types))
         return output
 
     def write_parent_tree(self, roots, start='', verbose=False):

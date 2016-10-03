@@ -96,15 +96,11 @@ def scores_vs_time(timeseries, numerator = 'fractionmatched'
             if reftype not in reftypes:
                  reftypes.add(reftype)
 
-    hastotal = 'total' in reftypes
-    if hastotal:
-        reftypes.remove('total')
     # Allocate storage
     time_fractions = {}
     time_fractions['all'] = numpy.zeros( max_its, float)
     for reftype in reftypes:
-        if reftype != 'total':
-            time_fractions[reftype] = numpy.zeros( max_its, float)
+        time_fractions[reftype] = numpy.zeros( max_its, float)
 
     # Update with data
     for it in range(max_its):
@@ -124,9 +120,7 @@ def scores_vs_time(timeseries, numerator = 'fractionmatched'
             # Any reference type which does not appear at this time point has zero matches so we just leave the value at zero
 
         # Handle 'all' case last
-        if hastotal:
-            time_fractions['all'][it] = timeseries[it]['total']['fraction']
-        else:
+        if time_fractions['all'][it] == 0:
             time_fractions['all'][it] = numer/float(denom)
 
     return time_fractions
