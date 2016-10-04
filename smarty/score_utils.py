@@ -62,7 +62,7 @@ def load_trajectory( trajFile):
             try:
                 timeseries[iteration][reftype]['fraction'] = timeseries[iteration][reftype][numerator]/float(timeseries[iteration][reftype][denominator])
             except ZeroDivisionError:
-                print("At iteration %s, found %s matched atoms and a denominator of %s for reftype %s..." % (iteration, timeseries[iteration][reftype]['atomsmatched'], timeseries[iteration][reftype]['denominator'], reftype))
+                print("At iteration %s, found %s matched atoms and a denominator of %s for reftype %s..." % (iteration, timeseries[iteration][reftype][numerator], timeseries[iteration][reftype][denominator], reftype))
                 raise
 
     return timeseries
