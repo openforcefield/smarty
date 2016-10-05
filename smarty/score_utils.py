@@ -15,10 +15,11 @@ def load_trajectory( trajFile):
     -------
         timeseries (dict) : status by iteration number
             Dictionary, keyed by iteration, storing the state at each iteration
-            Subsequent keys are by reference atom types, i.e. timeseries[1]['HO']
+            Subsequent keys are by reference types, (i.e. timeseries[1]['HO'])
+            and an entry for total if included in the trajectory file at timeseries[1]['total']
             gives data at step 1 on what (if anything) matches 'HO'. Subsequent
-            keys are 'smarts', 'matches', 'molecules', 'atomsmatched', 'index' (serial #
-            of match), `ParNum` (parent number), `ParentParNum` (parent of parent)
+            keys are 'smarts', 'matches', 'molecules', 'fractionmatched', 'index' (serial #
+            of match), `ParNum` (parameter number/label), `ParentParNum` (parameter number/label of parent)
             `denominator` (number of possible matches of this type), `fraction`
             (fraction of this type matched).
 
@@ -67,7 +68,8 @@ def load_trajectory( trajFile):
 
     return timeseries
 
-def scores_vs_time(timeseries, numerator = 'fractionmatched'):
+def scores_vs_time(timeseries, numerator = 'fractionmatched'
+        ):
     """Process a timeseries as read by load_trajectory and return the fraction of each reference atom type found at each time.
 
 
@@ -81,7 +83,7 @@ def scores_vs_time(timeseries, numerator = 'fractionmatched'):
     time_fractions : dict
         Dictionary of NumPy arrays, keyed by reference type.
         The full score across all types is under `all`.
-
+            'all' is from the total list if available or calculated from other references
     """
 
     # How many iterations are present?
@@ -100,7 +102,6 @@ def scores_vs_time(timeseries, numerator = 'fractionmatched'):
     for reftype in reftypes:
         time_fractions[reftype] = numpy.zeros( max_its, float)
 
-
     # Update with data
     for it in range(max_its):
         # Update reference types occuring at this iteration
@@ -113,18 +114,18 @@ def scores_vs_time(timeseries, numerator = 'fractionmatched'):
                 except KeyError:
                     print("Can't find key set %s, %s, %s for timeseries." % (it, reftype, 'fraction'))
                     print("Available keys:", timeseries[it][reftype].keys())
-                #print("%s, %s - %s" % (it, reftype, timeseries[it][reftype]['denominator']))
-                denom += timeseries[it][reftype]['matches']
+                denom += timeseries[it][reftype]['denominator']
                 numer += timeseries[it][reftype][numerator]
 
             # Any reference type which does not appear at this time point has zero matches so we just leave the value at zero
 
         # Handle 'all' case last
-        time_fractions['all'][it] = numer/float(denom)
+        if time_fractions['all'][it] == 0:
+            time_fractions['all'][it] = numer/float(denom)
 
     return time_fractions
 
-def create_plot_file(trajFile, plot_filename, plot_others=False):
+def create_plot_file(trajFile, plot_filename, plot_others=False, verbose = False):
     """
     Creates plot to demonstrate performance of smarty or smirky
 
@@ -139,6 +140,8 @@ def create_plot_file(trajFile, plot_filename, plot_others=False):
     timeseries = load_trajectory(trajFile)
     time_fractions = scores_vs_time(timeseries, numerator)
 
+    max_score = max(time_fractions['all']) *100.0
+    if verbose: print("Maximum score was %.1f %%" % max_score)
     # plot overall score
     pl.plot( time_fractions['all'], 'k-', linewidth = 2.0)
 
