@@ -40,3 +40,10 @@ The following files were created:
 * output_results.smarts - smarts file showing the file SMIRKS and their matched results
 
 Final score was 97.5%
+
+The results from smirky tests get a bit bulky so we are no storing them on github. 
+We maintain a Google Drive directory, 
+(smirky_testing)[https://drive.google.com/drive/folders/0BwF2-3puCvfESmFGNTQ4SGlsYnc?usp=sharing]
+that is public if you want to see more examples. 
+Please note the Google Drive directory is still a work in progress, more documentation
+is on its way. 
