@@ -172,6 +172,7 @@ def main():
 
     # Make iterations
     frac_found = fragment_sampler.run(option.iterations, verbose)
+    results = fragment_sampler.write_results_smarts_file()
     finished = time.time()
     elapsed = finished - finish_sampler
     per_it = elapsed / float(option.iterations)
@@ -181,4 +182,4 @@ def main():
     # plot results
     plot_file = "%s.pdf" % output
     traj = "%s.csv" % output
-    smarty.score_utils.create_plot_file(traj, plot_file, False)
+    smarty.score_utils.create_plot_file(traj, plot_file, False, verbose)
