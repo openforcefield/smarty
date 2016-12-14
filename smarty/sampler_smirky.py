@@ -1190,7 +1190,8 @@ class FragmentSampler(object):
             fraction of total types matched successfully at end of run
 
         """
-        self.traj = []
+        self.traj = open("%s.csv" % self.output,'w')
+        self.traj.write('Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n')
         for iteration in range(niterations):
             itinfo = "Iteration %d / %d" % (iteration, niterations)
             self.log.write(itinfo+'\n')
@@ -1204,7 +1205,7 @@ class FragmentSampler(object):
             lines = self.save_type_statistics(typelist, typecounts, molecule_typecounts, type_matches=self.type_matches)
             # Add lines to trajectory with iteration number:
             for l in lines:
-                self.traj.append('%i,%s\n' % (iteration, l))
+                self.traj.write('%i,%s\n' % (iteration, l))
 
             if accepted:
                 self.log.write('Accepted.\n')
@@ -1224,11 +1225,6 @@ class FragmentSampler(object):
             self.log.write('\n\n')
             if verbose: print('')
 
-        # Make trajectory file
-        f = open("%s.csv" % self.output, 'w')
-        start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
-        f.writelines(start + self.traj)
-        f.close()
 
         #Compute final type stats
         typelist = [ [env.asSMIRKS(), env.label] for env in self.envList]
@@ -1239,6 +1235,10 @@ class FragmentSampler(object):
         self.log.write("%s type hierarchy: \n" % self.typetag)
         roots = [e.label for e in self.baseTypes]
         self.write_parent_tree(roots, '\t', verbose)
+
+        # close files
+        self.log.close()
+        self.traj.close()
         return fraction_matched
 
     def write_results_smarts_file(self):
