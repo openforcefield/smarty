@@ -1118,7 +1118,7 @@ class FragmentSampler(object):
         -----------
         typelist - list of lists with form [smirks, typename]
         typecounts (dict) - number of matches for each fragment type
-        molecule_typecounds (dict) - number of molecules that contain each fragment type
+        molecule_typecounts (dict) - number of molecules that contain each fragment type
         type_matches : list of tuples (current_typelabel, reference_typelabel, counts)
             Best correspondence between current and reference types, along with number of fragment types equivalently typed in reference molecule set.
         """
@@ -1191,7 +1191,7 @@ class FragmentSampler(object):
 
         """
         self.traj = open("%s.csv" % self.output,'w')
-        self.traj.write('Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n')
+        self.traj.write('Iteration,Index,Smarts,Typename,ParentTypename,RefType,Matches,Molecules,FractionMatched,Denominator\n')
         for iteration in range(niterations):
             itinfo = "Iteration %d / %d" % (iteration, niterations)
             self.log.write(itinfo+'\n')
