@@ -788,7 +788,7 @@ class AtomTypeSampler(object):
                 print('')
 
                 # Print parent tree as it is now.
-                roots = self.parents.keys()
+                roots = list(self.parents.keys())
                 # Remove keys from roots if they are children
                 for parent, children in self.parents.items():
                     child_smarts = [smarts for [smarts, name] in children]
