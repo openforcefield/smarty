@@ -690,7 +690,7 @@ class AtomTypeSampler(object):
                     output.append("%i,'%s','%s','%s','%s',%i,%i,%i,%i" % (index, smarts, typename, parent, 'NONE', atom_typecounts[typename], molecule_typecounts[typename], 0, 0))
 
             else:
-                output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, typename, 0, 'NONE', atom_typecounts[typename], molecule_typecounts[typename], 0, 0))
+                output.append("%i,'%s',%i,%i,'%s',%i,%i,%i,%i" % (index, smarts, typename, parent, 'NONE', atom_typecounts[typename], molecule_typecounts[typename], 0, 0))
 
             ntypes += atom_typecounts[typename]
             index += 1
@@ -747,7 +747,6 @@ class AtomTypeSampler(object):
         """
         Takes the parent dictionary and returns a dictionary in the form
         {child: parent}
-        for the atomtypes in the provided typelist
         """
         child_to_parent = dict()
         for smarts in self.parents.keys():
@@ -838,8 +837,6 @@ class AtomTypeSampler(object):
         # If desired, make plot
         if plotFile:
             # TODO: check that this all still works with the changes to the trajectory  file...
-            # TODO: decide if there should be a separate method for this instead!
-            # TODO: determine if this can use your method in utilities or scoring functions wherever you stored the plot function cli_smirky uses
             import pylab as pl
             if not trajFile:
                 raise Exception("Cannot construct plot of trajectory without a trajectory file.")
