@@ -3,7 +3,7 @@ import smarty
 from smarty.environment import *
 from smarty.sampler_smirky import *
 from smarty import utils
-from smarty import score_utiles
+from smarty import score_utils
 from operator import itemgetter, attrgetter
 import openeye.oechem
 from openeye.oechem import *
