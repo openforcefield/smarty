@@ -3,6 +3,7 @@ import smarty
 from smarty.environment import *
 from smarty.sampler_smirky import *
 from smarty import utils
+from smarty import score_utiles
 from operator import itemgetter, attrgetter
 import openeye.oechem
 from openeye.oechem import *
@@ -54,6 +55,7 @@ class TestSmirkySampler(unittest.TestCase):
     def test_random_sampler(self):
         """
         Test FragmentSampler runs for 10 iterations with no failures
+        Test score_utils functions with the outputFile
         """
         typetag = 'Torsion'
         sampler = FragmentSampler(self.molecules, typetag, self.atom_OR_bases,
@@ -61,6 +63,12 @@ class TestSmirkySampler(unittest.TestCase):
                 self.bond_AND_decors, self.atom_odds, self.bond_odds,
                 self.replacements, None, self.SMIRFF, 0.0, self.outputFile)
         fracfound = sampler.run(10)
+        # load_trajectory converts csv file to dictionary
+        timeseries = score_utils.load_trajectory('%s.csv' % self.outputFile)
+        # scores_vs_time converts num/den entries to fractional scores
+        scores_vs_time = score_utils.scores_vs_time(timeseries)
+        # test plotting function
+        score_utils.create_plot_file('%s.csv' % self.outputFile, '%s.pdf' % outputFile)
 
 
     def test_sampler_functions(self):
