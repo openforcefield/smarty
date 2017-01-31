@@ -68,7 +68,7 @@ class TestSmirkySampler(unittest.TestCase):
         # scores_vs_time converts num/den entries to fractional scores
         scores_vs_time = score_utils.scores_vs_time(timeseries)
         # test plotting function
-        score_utils.create_plot_file('%s.csv' % self.outputFile, '%s.pdf' % outputFile)
+        score_utils.create_plot_file('%s.csv' % self.outputFile, '%s.pdf' % self.outputFile)
 
 
     def test_sampler_functions(self):
