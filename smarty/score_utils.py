@@ -50,7 +50,7 @@ def load_trajectory( trajFile):
         iteration = data.Iteration[linenr]
 
         # Pull elements from line and store
-        if not timeseries.has_key( iteration): timeseries[iteration] = {}
+        if not iteration in timeseries: timeseries[iteration] = {}
         reftype = data.RefType[linenr]
 
         if not reftype=="'NONE'":
@@ -108,7 +108,7 @@ def scores_vs_time(timeseries, numerator = 'fractionmatched'
         denom = 0
         numer = 0
         for reftype in reftypes:
-            if timeseries[it].has_key(reftype):
+            if reftype in timeseries[it]:
                 try:
                     time_fractions[reftype][it] = timeseries[it][reftype]['fraction']
                 except KeyError:
