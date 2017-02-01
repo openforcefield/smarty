@@ -1,5 +1,6 @@
 import numpy
 import pandas as pd
+import pylab as pl
 
 def load_trajectory( trajFile):
     """Load data from a specified smarty trajectory .csv file and return a summary.
@@ -133,7 +134,7 @@ def create_plot_file(trajFile, plot_filename, plot_others=False, verbose = False
     plot_filename - pdf to save plot file to
     plot_others - if True plots data for all reftypes separately, optional
     """
-    import pylab as pl
+
     data = pd.read_csv(trajFile, quotechar="'")
     numerator = data.columns[-2].lower()
 
