@@ -1,5 +1,7 @@
 import numpy
 import pandas as pd
+import matplotlib
+matplotlib.use('pdf')
 import pylab as pl
 
 def load_trajectory( trajFile):
