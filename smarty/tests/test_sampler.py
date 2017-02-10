@@ -57,10 +57,10 @@ class TestAtomTypeSampler(TestCase):
         """
         Test elemental atomtype sampler for hydrogen
         """
-        atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
+        atomtype_sampler = smarty.AtomTypeSamplerElemental(self.mols_alkethoh,
                 self.basetypes, self.basetypes, self.combine_decs,
                 self.replacements, self.mols_alkethoh_ref, 0.1, False,
-                'combinatorial-decorators', 1)
+                'combinatorial-decorators', '1')
         # run sampler with optional outputs
         traj = 'test_smarty.csv'
         plot = 'test_smarty.pdf'
@@ -88,10 +88,10 @@ class TestAtomTypeSampler(TestCase):
         """
         Test elemental sampler with correct "answers"
         """
-        atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
+        atomtype_sampler = smarty.AtomTypeSamplerElemental(self.mols_alkethoh,
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
                 self.replacements, self.mols_alkethoh_ref, 0.1, False,
-                'combinatorial-decorators',1)
+                'combinatorial-decorators','1')
         # Start sampling atom types.
         fracfound = atomtype_sampler.run(2)
 
