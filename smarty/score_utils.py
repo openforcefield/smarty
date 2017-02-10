@@ -1,5 +1,8 @@
 import numpy
 import pandas as pd
+import matplotlib
+matplotlib.use('pdf')
+import pylab as pl
 
 def load_trajectory( trajFile):
     """Load data from a specified smarty trajectory .csv file and return a summary.
@@ -50,7 +53,7 @@ def load_trajectory( trajFile):
         iteration = data.Iteration[linenr]
 
         # Pull elements from line and store
-        if not timeseries.has_key( iteration): timeseries[iteration] = {}
+        if not iteration in timeseries: timeseries[iteration] = {}
         reftype = data.RefType[linenr]
 
         if not reftype=="'NONE'":
@@ -88,12 +91,12 @@ def scores_vs_time(timeseries, numerator = 'fractionmatched'
     """
 
     # How many iterations are present?
-    max_its = numpy.max(timeseries.keys())
+    max_its = numpy.max([k for k in timeseries])
 
     # Retrieve keys of all reference types
     reftypes = set()
-    for it in timeseries.keys():
-        for reftype in timeseries[it].keys():
+    for it in timeseries:
+        for reftype in timeseries[it]:
             if reftype not in reftypes:
                  reftypes.add(reftype)
 
@@ -109,12 +112,12 @@ def scores_vs_time(timeseries, numerator = 'fractionmatched'
         denom = 0
         numer = 0
         for reftype in reftypes:
-            if timeseries[it].has_key(reftype):
+            if reftype in timeseries[it]:
                 try:
                     time_fractions[reftype][it] = timeseries[it][reftype]['fraction']
                 except KeyError:
                     print("Can't find key set %s, %s, %s for timeseries." % (it, reftype, 'fraction'))
-                    print("Available keys:", timeseries[it][reftype].keys())
+                    print("Available keys:", timeseries[it][reftype])
                 denom += timeseries[it][reftype]['denominator']
                 numer += timeseries[it][reftype][numerator]
 
@@ -134,7 +137,7 @@ def create_plot_file(trajFile, plot_filename, plot_others=False, verbose = False
     plot_filename - pdf to save plot file to
     plot_others - if True plots data for all reftypes separately, optional
     """
-    import pylab as pl
+
     data = pd.read_csv(trajFile, quotechar="'")
     numerator = data.columns[-2].lower()
 
@@ -147,7 +150,7 @@ def create_plot_file(trajFile, plot_filename, plot_others=False, verbose = False
     pl.plot( time_fractions['all'], 'k-', linewidth = 2.0)
 
     if plot_others:
-        reftypes = time_fractions.keys()
+        reftypes = [k for k in time_fractions]
         reftypes.remove('all')
 
         # Plot scors for individual types
