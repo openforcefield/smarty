@@ -3,6 +3,7 @@ import smarty
 from smarty import AtomTyper, AtomTypeSampler, score_utils
 from smarty.sampler_elemental import *
 from smarty.utils import get_data_filename
+import unittest
 from unittest import TestCase
 
 class TestAtomTypeSampler(TestCase):
@@ -15,7 +16,7 @@ class TestAtomTypeSampler(TestCase):
         self.basetypes = get_data_filename('atomtypes/basetypes.smarts')
         self.alkethoh_answers = get_data_filename('atomtypes/initial_AlkEthOH.smarts')
         self.simple_decs = get_data_filename('atomtypes/decorators.smarts')
-        self.combine_decs = get_data_filename('atomtypes/new_decorators.smarts')
+        self.combine_decs = get_data_filename('atomtypes/new-decorators.smarts')
         self.replacements = get_data_filename('atomtypes/replacements.smarts')
 
         # import molecules
@@ -59,7 +60,7 @@ class TestAtomTypeSampler(TestCase):
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.basetypes, self.combine_decs,
                 self.replacements, self.mols_alkethoh_ref, 0.1, False,
-                'combinatorial-decorators', "1")
+                'combinatorial-decorators', 1)
         # run sampler with optional outputs
         traj = 'test_smarty.csv'
         plot = 'test_smarty.pdf'
@@ -71,9 +72,9 @@ class TestAtomTypeSampler(TestCase):
 
     def test_atomtyper_AlkEthOH(self):
         """
-        Test atomtype samper with correct "answers"
+        Test atomtype sampler with correct "answers"
         """
-        atomtype_sampler = smarty.AtomTypeSamplerElemental(self.mols_alkethoh,
+        atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
                 self.replacements, self.mols_alkethoh_ref, 0.1, False)
         # Start sampling atom types.
@@ -87,10 +88,10 @@ class TestAtomTypeSampler(TestCase):
         """
         Test elemental sampler with correct "answers"
         """
-        atomtype_sampler = smarty.AtomTypeSamplerElemental(self.mols_alkethoh,
+        atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
                 self.replacements, self.mols_alkethoh_ref, 0.1, False,
-                'combinatorial-decorators','1')
+                'combinatorial-decorators',1)
         # Start sampling atom types.
         fracfound = atomtype_sampler.run(2)
 
