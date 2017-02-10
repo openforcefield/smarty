@@ -90,17 +90,32 @@ class AtomTypeSampler(object):
         self.typetag = 'atomtype' # internal tag
         self.temperature = temperature
 
-        # Store a deep copy of the molecules since they will be annotated
-        self.molecules = copy.deepcopy(molecules)
-
-        # Save bond list to use throughout
-        self.bondset = [("-","singly"), ("=", "doubly"), ("#","triply"), (":", "aromatic"), ("~","any")]
-
         # Read atomtypes (initial and base) and decorators.
         self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
         self.basetypes = AtomTyper.read_typelist(basetypes_filename)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
+
+        # Store a deep copy of the molecules since they will be annotated
+        self.molecules = copy.deepcopy(molecules)
+
+        # Save bond list to use throughout
+        bondset = [("-","singly"), ("=", "doubly"), ("#","triply"), (":", "aromatic")]
+
+        # Calculate which bonds in set are used
+        bond_typelist = [["[*]%s[*]" %bond, name] for (bond, name) in bondset]
+        tmpmolecules = copy.deepcopy(molecules)
+        self.type_molecules(bond_typelist, tmpmolecules, 0)
+        [bond_typecounts, molecule_bond_typecounts] = self.compute_type_statistics( bondset, tmpmolecules, 0)
+        if self.verbose:
+            print("USED BOND TYPES:")
+            self.show_type_statistics(bondset, bond_typecounts, molecule_bond_typecounts)
+
+        # only same bonds that are used
+        self.bondset = [ ('~', 'any') ]
+        for (bond, name) in bondset:
+            if bond_typecounts[name] > 0:
+                self.bondset.append( (bond, name) )
 
         # Rename base/initial types to ensure their names are unique
         # clashes between initial and target types will cause problems
@@ -119,44 +134,40 @@ class AtomTypeSampler(object):
                 self.atomtypes = [[smarts, typename]] + self.atomtypes
                 if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename) )
 
-        # Type all molecules with current typelist to ensure that starting types are sufficient.
-        self.type_molecules(self.atomtypes, self.molecules)
-
-        # Compute atomtype statistics on molecules for current atomtype set
-        [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
-        if self.verbose: self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
-
         # Maintain a list of SMARTS matches without any atom type matches in the dataset
         # This is used for efficiency.
         self.atomtypes_with_no_matches = set()
 
-        # Compute two options for basetypes, those used for this element sampling and those available to be added to new SMARTS
         tmpmolecules = copy.deepcopy(molecules)
-        self.type_molecules(self.basetypes, tmpmolecules)
-        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, tmpmolecules )
-
         self.type_molecules(self.basetypes, tmpmolecules, 0)
-        [ new_basetype_counts, new_molecule_basetype_typecounts] = self.compute_type_statistics(self.basetypes, tmpmolecules)
+        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, tmpmolecules, 0)
+        if self.verbose:
+            print("MATCHED BASETYPES:")
+            self.show_type_statistics(self.basetypes, basetype_typecounts, molecule_basetype_typecounts)
 
         # store used basedtypes for reference later
-        self.used_basetypes = list()
-        tmp_basetypes = list()
+        used_basetypes = list()
 
         # Track only used base types and add unused to atomtypes with no matches
         for (smarts, atom_type) in self.basetypes:
             # If this type is used, then track it
-            if new_basetype_counts[atom_type] > 0:
-                self.used_basetypes.append( [ smarts, atom_type] )
-                if self.verbose: print("Base type `%s` (`%s`) types %i atoms stored for sampling" % (smarts, atom_type, new_basetype_counts[atom_type] ))
-                if basetype_typecounts[atom_type] > 0:
-                    tmp_basetypes.append( [smarts, atom_type])
-                    if self.verbose: print("Storing used base type `%s` (`%s`) as it types an atom being sampled" % (smarts, atom_type))
+            if basetype_typecounts[atom_type] > 0:
+                used_basetypes.append( [ smarts, atom_type] )
+                if self.verbose: print("Base type `%s` (`%s`) types %i atoms stored for sampling" % (smarts, atom_type, basetype_typecounts[atom_type] ))
             # If unused, it matches nothing in the set
             else:
                 self.atomtypes_with_no_matches.add( smarts )
                 if self.verbose: print("Removing basetype '%s', which is unused." % smarts)
         # Atom basetypes to create new smart strings
-        self.basetypes = copy.deepcopy(tmp_basetypes)
+        self.basetypes = copy.deepcopy(used_basetypes)
+
+        # Type all molecules with current typelist to ensure that starting types are sufficient.
+        self.type_molecules(self.atomtypes, self.molecules)
+        # Compute atomtype statistics on molecules for current atomtype set
+        [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules)
+        if self.verbose:
+            print("MATCHED INITIAL TYPES:")
+            self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
 
         # Track only used atomtypes and add unused to atomtypes with no matches
         used_initial_atomtypes = list()
@@ -165,8 +176,11 @@ class AtomTypeSampler(object):
                 used_initial_atomtypes.append( [smarts, atom_type] )
             else:
                 self.atomtypes_with_no_matches.add( smarts )
-                if self.verbose: print("Removing initial atom type '%s', which is unused" % smarts)
+                if self.verbose:
+                    if self.element == 0: print("Removing initial atom type '%s', which is unused for sampling all atoms" % smarts)
+                    else: print("Removing initial atom type '%s', which is unused for sampling atoms with atomic number: %i" % (smarts, self.element))
         self.atomtypes = copy.deepcopy(used_initial_atomtypes)
+        self.initial_atomtypes = copy.deepcopy(used_initial_atomtypes)
 
         # Type molecules again with the updated atomtype list
         self.type_molecules(self.atomtypes, self.molecules)
@@ -212,13 +226,16 @@ class AtomTypeSampler(object):
 
         return
 
-    def _GetAtoms(self, molecule):
+    def _GetAtoms(self, molecule, element = None):
         """
         Returns iterator for the atoms being sampled
         All atoms or only the atoms for the specified element
         """
-        if self.element > 0:
-            return molecule.GetAtoms(OEHasAtomicNum(self.element))
+        if element is None:
+            element = self.element
+
+        if element > 0:
+            return molecule.GetAtoms(OEHasAtomicNum(element))
         else:
             return molecule.GetAtoms()
 
@@ -447,7 +464,7 @@ class AtomTypeSampler(object):
             if self.verbose: print("Attempting to destroy atom type %s : %s..." % (atomtype, typename))
             # Reject deletion of (populated) base types as we want to retain
             # generics even if empty
-            if [atomtype, typename] in self.used_basetypes:
+            if [atomtype, typename] in self.basetypes:
                 if self.verbose: print("Destruction rejected for atom type %s because this is a generic type which was initially populated." % atomtype )
                 return False
 
@@ -498,7 +515,7 @@ class AtomTypeSampler(object):
                 if self.HasAlpha(atom1type):
                     # Has alpha
                     bondset_index = random.randint(0, nbondset-1)
-                    atom2type = self.PickAnAtom(self.used_basetypes)
+                    atom2type = self.PickAnAtom(self.basetypes)
                     if random.random() < 0.5 or atom1type[0][2] == '1': # Add Beta Substituent Atom randomly or when it is Hydrogen
                         proposed_atomtype, proposed_typename = self.AddBetaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type)
                     else: # Add another Alpha Substituent if it is not a Hydrogen
@@ -514,7 +531,7 @@ class AtomTypeSampler(object):
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) + '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], decorator[0], decorator[1], proposed_atomtype, proposed_typename))
                     else:
                         bondset_index = random.randint(0, nbondset-1)
-                        atom2type = self.PickAnAtom(self.used_basetypes)
+                        atom2type = self.PickAnAtom(self.basetypes)
                         proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, self.bondset[bondset_index], atom2type, first_alpha = True)
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
 
@@ -609,6 +626,7 @@ class AtomTypeSampler(object):
         """
         if element is None:
             element = self.element
+
         # Create an atom typer.
         atomtyper = AtomTyper(typelist, self.typetag, replacements=self.replacements)
 
@@ -618,7 +636,7 @@ class AtomTypeSampler(object):
 
         return
 
-    def compute_type_statistics(self, typelist, molecules):
+    def compute_type_statistics(self, typelist, molecules, element=None):
         """
         Compute statistics for numnber of molecules assigned each type.
         ARGUMENTS
@@ -629,6 +647,8 @@ class AtomTypeSampler(object):
         atom_typecounts (dict) - counts of number of atoms containing each atomtype
         molecule_typecounds (dict) - counts of number of molecules containing each atom type
         """
+        if element is None:
+            element = self.element
         # Zero type counts by atom and molecule.
         atom_typecounts = dict()
         molecule_typecounts = dict()
@@ -639,7 +659,7 @@ class AtomTypeSampler(object):
         # Count number of atoms with each type.
         for molecule in molecules:
             types_in_this_molecule = set()
-            for atom in self._GetAtoms(molecule):
+            for atom in self._GetAtoms(molecule, element):
                 atomtype = atom.GetStringData(self.typetag)
                 types_in_this_molecule.add(atomtype)
                 atom_typecounts[atomtype] += 1
@@ -751,7 +771,7 @@ class AtomTypeSampler(object):
                     reference_counts[typename] = count
 
         # If all of a basetype and it's children match found atoms and reference remove from list
-        for [base_smarts, base_typename] in self.basetypes:
+        for [base_smarts, base_typename] in self.initial_atomtypes:
             includeBase = True
 
             # If the number of atoms matches the references are the same for basetypes and their children
