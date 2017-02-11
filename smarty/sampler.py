@@ -509,7 +509,9 @@ class AtomTypeSampler(object):
                 # combinatorial-decorators
                 nbondset = len(self.bondset)
                 # Pick an atomtype
-                atom1type = self.PickAnAtom(self.unmatched_atomtypes)
+                # TODO: determine how to use unmatched_atomtypes
+                #atom1type = self.PickAnAtom(self.unmatched_atomtypes)
+                atom1type = self.PickAnAtom(self.atomtypes)
                 atom1smarts, atom1typename = atom1type
                 # Check if we need to add an alfa or beta substituent
                 if self.HasAlpha(atom1type):
