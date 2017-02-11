@@ -1,7 +1,6 @@
 from functools import partial
 import smarty
 from smarty import AtomTyper, AtomTypeSampler, score_utils
-from smarty.sampler_elemental import *
 from smarty.utils import get_data_filename
 import unittest
 from unittest import TestCase
