@@ -406,9 +406,10 @@ class AtomTypeSampler(object):
 
     def AddAlphaSubstituentAtom(self, atom1type, bondset, atom2type):
         """
-        Adds an atom alpha to the primary atom. This can happen in two ways,
-        as the first alpha atom, i.e. '[#6]' --> '[#6$(*-[#8])]'
-        or as an additional alpha atom, i.e. '[#6$(*-[#8])]' --> '[#6$(*-[#8])$(*-[#1])]'
+        Adds an atom alpha to the primary atom. The new alpha substituent
+        always adds to the end of the sequence of alpha atom
+        so if you have '[#1$(*~[#6])]' the next alpha atom [#8] is added in
+        this way '[#1$(*~[#6])$(*~[#8])]'
 
         Parameters
         ----------
@@ -420,12 +421,7 @@ class AtomTypeSampler(object):
         -------
         Atomtype with new alpha substituent (smarts, typename)
         """
-        if self.HasAlpha(atom1type):
-            result = re.match('\[(.+)\]', atom1type[0])
-            proposed_atomtype = '[' + result.groups(1)[0] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
-        else:
-            # Add the new alpha at the end
-            proposed_atomtype = atom1type[0][:len(atom1type[0])-1] + '$(*' + bondset[0] + atom2type[0] + ')' + ']'
+        proposed_atomtype = atom1type[0][:len(atom1type[0])-1] + '$(*' + bondset[0] + atom2type[0] + ')]'
         proposed_typename = atom1type[1] + ' ' + bondset[1] + ' ' + atom2type[1] + ' '
         return (proposed_atomtype, proposed_typename)
 
@@ -485,17 +481,16 @@ class AtomTypeSampler(object):
         proposed_parents = copy.deepcopy(self.parents)
 
         if random.random() < 0.5:
-            # Pick an atom type to destroy.
-            (atomtype, typename) = self.PickAnAtom(proposed_atomtypes)
+            # Pick a random index and remove atomtype at that index
+            remove_index = random.randit(0, len(proposed_atomtypes))
+            (atomtype, typename) = proposed_atomtypes.pop(remove_index)
             if self.verbose: print("Attempting to destroy atom type %s : %s..." % (atomtype, typename))
+
             # Reject deletion of (populated) base types as we want to retain
             # generics even if empty
-            if (atomtype, typename) in self.basetypes:
+            if atomtype in self.basetypes_smarts:
                 if self.verbose: print("Destruction rejected for atom type %s because this is a generic type which was initially populated." % atomtype )
                 return False
-
-            # Delete the atomtype.
-            proposed_atomtypes.remove( (atomtype, typename) )
 
             # update proposed parent dictionary
             for parent, children in proposed_parents.items():
@@ -536,7 +531,7 @@ class AtomTypeSampler(object):
                     if random.random() < 0.5 or atom1type[0][2] == '1': # Add Beta Substituent Atom randomly or when it is Hydrogen
                         proposed_atomtype, proposed_typename = self.AddBetaSubstituentAtom(atom1type, bondtype, atom2type)
                     else: # Add another Alpha Substituent if it is not a Hydrogen
-                        proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondtype, atom2type, first_alpha = False)
+                        proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondtype, atom2type)
                     if self.verbose: print("Attempting to create new subtype: -> '%s' (%s)" % (proposed_atomtype, proposed_typename))
                 else:
                     # Has no alpha
@@ -547,7 +542,7 @@ class AtomTypeSampler(object):
                     else: # add Alpha substituent
                         bondtype = self.PickAnAtom(self.bondset)
                         atom2type = self.PickAnAtom(self.basetypes)
-                        proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondtype, atom2type, first_alpha = True)
+                        proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondtype, atom2type)
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
 
 
