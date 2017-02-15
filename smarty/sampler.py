@@ -482,8 +482,7 @@ class AtomTypeSampler(object):
 
         if random.random() < 0.5:
             # Pick a random index and remove atomtype at that index
-            remove_index = random.randit(0, len(proposed_atomtypes))
-            (atomtype, typename) = proposed_atomtypes.pop(remove_index)
+            (atomtype, typename) = self.PickAnAtom(proposed_atomtypes)
             if self.verbose: print("Attempting to destroy atom type %s : %s..." % (atomtype, typename))
 
             # Reject deletion of (populated) base types as we want to retain
@@ -492,6 +491,8 @@ class AtomTypeSampler(object):
                 if self.verbose: print("Destruction rejected for atom type %s because this is a generic type which was initially populated." % atomtype )
                 return False
 
+            # remove chosen atomtype
+            proposed_atomtypes.remove( (atomtype, typename) )
             # update proposed parent dictionary
             for parent, children in proposed_parents.items():
                 if atomtype in [at for (at, tn) in children]:
