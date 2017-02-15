@@ -506,7 +506,7 @@ class AtomTypeSampler(object):
             except AtomTyper.TypingException as e:
                 # Reject since typing failed.
                 if self.verbose: print("Typing failed; rejecting.")
-                    return False
+                return False
         else:
             if self.decorator_behavior == 'simple-decorators':
                 # Pick an atomtype to subtype.
