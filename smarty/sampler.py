@@ -585,7 +585,7 @@ class AtomTypeSampler(object):
 
             # Reject if any type is emptied (UNLESS it is a basetype)
             for (smarts, typename) in proposed_atomtypes:
-                if not smarts in self.basetype_smarts: # not a base type
+                if not smarts in self.basetypes_smarts: # not a base type
                     if proposed_atom_typecounts[typename] == 0: # no matches
                         if self.verbose: print("Atomtype '%s' (%s) is now unused in dataset; rejecting." % (smarts, typename))
                         return False
