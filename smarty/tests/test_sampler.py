@@ -93,7 +93,7 @@ class TestAtomTypeSampler(TestCase):
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
                 replacements_filename = self.replacements,
                 reference_typed_molecules = self.mols_alkethoh_ref,
-                temperature = 0.1, verbose = False)
+                temperature = 0, verbose = False)
         # Start sampling atom types.
         fracfound = atomtype_sampler.run(2)
         # Ensure fraction found is 1.0
@@ -109,7 +109,7 @@ class TestAtomTypeSampler(TestCase):
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
                 replacements_filename = self.replacements,
                 reference_typed_molecules = self.mols_alkethoh_ref,
-                temperature = 0.1, verbose = False,
+                temperature = 0, verbose = False,
                 decorator_behavior = 'combinatorial-decorators',element = 1)
         # Start sampling atom types.
         fracfound = atomtype_sampler.run(2)
