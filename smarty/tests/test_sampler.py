@@ -67,7 +67,7 @@ class TestAtomTypeSampler(TestCase):
         """
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.basetypes, self.combine_decs,
-                replacements = self.replacements,
+                replacements_filename = self.replacements,
                 reference_typed_molecules = self.mols_alkethoh_ref,
                 temperature = 0.1, verbose = False,
                 decorator_behavior = 'combinatorial-decorators', element=1)
@@ -91,7 +91,7 @@ class TestAtomTypeSampler(TestCase):
         """
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
-                replacement_filename = self.replacements,
+                replacements_filename = self.replacements,
                 reference_typed_molecules = self.mols_alkethoh_ref,
                 temperature = 0.1, verbose = False)
         # Start sampling atom types.
@@ -107,7 +107,7 @@ class TestAtomTypeSampler(TestCase):
         """
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
-                replacement_filename = self.replacements,
+                replacements_filename = self.replacements,
                 reference_typed_molecules = self.mols_alkethoh_ref,
                 temperature = 0.1, verbose = False,
                 decorator_behavior = 'combinatorial-decorators',element = 1)
