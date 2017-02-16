@@ -29,6 +29,7 @@ import copy
 import re
 import numpy
 import random
+from smarty import utils
 
 import openeye.oechem
 import openeye.oeomega
@@ -165,7 +166,10 @@ class AtomTyper(object):
             return None
 
         if not os.path.exists(filename):
-            raise Exception("File '%s' not found." % filename)
+            built_in = get_data_filename(filename)
+            if not os.path.exists(built_in):
+                raise Exception("File '%s' not found." % filename)
+            filename = built_in
 
         typelist = list()
         ifs = open(filename)
