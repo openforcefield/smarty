@@ -32,8 +32,10 @@ class TestAtomTypeSampler(TestCase):
         """
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_zinc,
                 self.basetypes, self.basetypes, self.simple_decs,
-                self.replacements, self.mols_zinc_ref, 0.1, False,
-                'simple-decorators')
+                replacements_filename = self.replacements,
+                reference_typed_molecules =self.mols_zinc_ref,
+                temperature = 0.1, verbose = False,
+                decorator_behavior = 'simple-decorators', element =0)
         atomtype_sampler.run(2)
 
     def test_atomtyper_combinatorial(self):
@@ -42,7 +44,10 @@ class TestAtomTypeSampler(TestCase):
         """
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_zinc,
                 self.basetypes, self.basetypes, self.combine_decs,
-                self.replacements, self.mols_zinc_ref, 0.1, False)
+                replacements_filename = self.replacements,
+                reference_typed_molecules =self.mols_zinc_ref,
+                temperature = 0.1, verbose = False)
+
         # run sampler with optional outputs
         traj = 'test_smarty.csv'
         plot = 'test_smarty.pdf'
@@ -51,6 +56,10 @@ class TestAtomTypeSampler(TestCase):
         timeseries = score_utils.load_trajectory(traj)
         scores_vs_time = score_utils.scores_vs_time(timeseries)
         score_utils.create_plot_file(traj, plot, True, False)
+
+        # check if score is 100% at first iteration
+        if scores_vs_time['all'][0] == 1.0:
+            raise Exception("Scoring problem, 100% at first iteration for total")
 
     def test_atomtyper_elemental(self):
         """
@@ -58,8 +67,10 @@ class TestAtomTypeSampler(TestCase):
         """
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.basetypes, self.combine_decs,
-                self.replacements, self.mols_alkethoh_ref, 0.1, False,
-                'combinatorial-decorators', 1)
+                replacements = self.replacements,
+                reference_typed_molecules = self.mols_alkethoh_ref,
+                temperature = 0.1, verbose = False,
+                decorator_behavior = 'combinatorial-decorators', element=1)
         # run sampler with optional outputs
         traj = 'test_smarty.csv'
         plot = 'test_smarty.pdf'
@@ -69,13 +80,20 @@ class TestAtomTypeSampler(TestCase):
         scores_vs_time = score_utils.scores_vs_time(timeseries)
         score_utils.create_plot_file(traj, plot, True, False)
 
+        # check if score is 100% at first iteration
+        if scores_vs_time['all'][0] == 1.0:
+            raise Exception("Scoring problem, 100% at first iteration for total")
+
+
     def test_atomtyper_AlkEthOH(self):
         """
         Test atomtype sampler with correct "answers"
         """
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
-                self.replacements, self.mols_alkethoh_ref, 0.1, False)
+                replacement_filename = self.replacements,
+                reference_typed_molecules = self.mols_alkethoh_ref,
+                temperature = 0.1, verbose = False)
         # Start sampling atom types.
         fracfound = atomtype_sampler.run(2)
         # Ensure fraction found is 1.0
@@ -89,8 +107,10 @@ class TestAtomTypeSampler(TestCase):
         """
         atomtype_sampler = smarty.AtomTypeSampler(self.mols_alkethoh,
                 self.basetypes, self.alkethoh_answers, self.combine_decs,
-                self.replacements, self.mols_alkethoh_ref, 0.1, False,
-                'combinatorial-decorators',1)
+                replacement_filename = self.replacements,
+                reference_typed_molecules = self.mols_alkethoh_ref,
+                temperature = 0.1, verbose = False,
+                decorator_behavior = 'combinatorial-decorators',element = 1)
         # Start sampling atom types.
         fracfound = atomtype_sampler.run(2)
 
