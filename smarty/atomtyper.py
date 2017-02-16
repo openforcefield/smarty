@@ -166,7 +166,7 @@ class AtomTyper(object):
             return None
 
         if not os.path.exists(filename):
-            built_in = get_data_filename(filename)
+            built_in = utils.get_data_filename(filename)
             if not os.path.exists(built_in):
                 raise Exception("File '%s' not found." % filename)
             filename = built_in
