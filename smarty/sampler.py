@@ -135,7 +135,7 @@ class AtomTypeSampler(object):
 
         tmpmolecules = copy.deepcopy(molecules)
         self.type_molecules(self.basetypes, tmpmolecules)
-        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, tmpmolecules, self.element)
+        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, tmpmolecules)
         if self.verbose:
             print("MATCHED BASETYPES:")
             self.show_type_statistics(self.basetypes, basetype_typecounts, molecule_basetype_typecounts)
