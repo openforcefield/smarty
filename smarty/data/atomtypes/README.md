@@ -1,10 +1,9 @@
 # Atom type SMARTS components
 
 ## Formats
-
-### Initial types
-
-A `basetypes` file specifies the initial atom types used to initialize the sampler.
+smarts files are used as input for the smarty sampler
+there are a variety of types, detailed below. All follow
+the same general format.
 
 Comments beginning with `%` are ignored throughout the file.
 Each line has the format
@@ -15,49 +14,37 @@ where `<SMARTS>` is an [OpenEye SMARTS string](https://docs.eyesopen.com/toolkit
 
 Atom type definitions are hierarchical, with the last match in the file taking precedence over earlier matches.
 
-For example, we could use the elemental base types:
-```
-% atom types
-H    hydrogen
-C    carbon
-N    nitrogen
-O    oxygen
-F    fluorine
-P    phosphorous
-S    sulfur
-Cl   chlorine
-Br   bromine
-I    iodine
-```
+### Initial and Base types
 
-### Decorators
+These are both used to initialize the smarty sampler.
+`basetypes` are considered more generic. 
+These are the atomtypes used to create new atomtypes.
+See the file `basetypes.smarts`
+
+`initial` types can be more complex 
+for example the files
+`initialtypes.smarts` or `initiali\_AlkEthOH.smarts`
+
+### Simple and Combinatorial Decorators
 
 A `decorators` file contains a list of SMARTS
 
-Comments beginning with `%` are ignored throughout the file.
-Each line has the format
-```
-<SMARTS> <decoratorname>
-```
-where `<SMARTS>` is an [OpenEye SMARTS string](https://docs.eyesopen.com/toolkits/cpp/oechemtk/SMARTS.html) and `<decoratorname>` is a human-readable typename associated with that decorator.
-
-The SMARTS component is ANDed together (using the `&` operator) with a parent atom type to create a new proposed child atom type.
+In smarty, when using simple decorators, the new atomtypes are created only
+by ANDing the decorator SMARTS component to the parent atomtype (using the `&` operator).
 The human-readable `<decoratorname>` is appended (with a space) to the parent name to keep a human-readable annotation of the proposed child atom type.
+
+
+Example simple decorators are in *`decorators.smarts`* and are typically more complicated as they must include all 
+ways of generating new atomtypes
+
+Combinatorial decorators use a more complex set of rules to generate new SMARTS strings. 
+In this case, bonded atoms are found in the basetypes, so only "non-bonding decorators" need to be 
+in the decorator file. 
+For exampl see *`new-decorators.smarts`* 
 
 ### Substitutions
 
 It is often convenient to define various tokens that are substituted for more sophisticated SMARTS expressions.
-
-% Substitution definitions
-% Format:
-% <SMARTS> <replacement-string>
-
-Comments beginning with `%` are ignored throughout the file.
-Each line has the format
-```
-<SMARTS> <substitution-name>
-```
-where `<SMARTS>` is an [OpenEye SMARTS string](https://docs.eyesopen.com/toolkits/cpp/oechemtk/SMARTS.html) and `<substitution-name>` is the token that will be substituted for this.
 
 For example, we could define some elemental substitutions along with some substitutions for halogens:
 ```
@@ -76,8 +63,9 @@ For example, we could define some elemental substitutions along with some substi
 The [`OESmartsLexReplace`](http://docs.eyesopen.com/toolkits/python/oechemtk/OEChemFunctions/OESmartsLexReplace.html) function is used to implement these replacements.
 
 ## Manifest
-* `basetypes-elemental.smarts` - basetypes file with elemental atom types - this is a good choice to begin with
-* `basetypes.smarts` - basetypes file with more sophisticated atom types
+* `basetypes.smarts` - basetypes file with elemental atom types - this is a good choice to begin with
+* `initial.smarts` - basetypes file with more sophisticated atom types
+* `initial\_AlkEthOH.smarts` - the "answer" SMARTS strings for the AlkEthOH molecule set
 * `decorators.smarts` - `decorators` file with a variety of decorators
 * `decorators-simple.smarts` - minimal `decorators` file for testing
 * `new-decorators.smarts` - decorators file without bond information (new modular framework)
