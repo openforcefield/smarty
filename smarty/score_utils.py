@@ -64,15 +64,15 @@ def load_trajectory( trajFile):
                 else:
                     timeseries[iteration][reftype][k.lower()] = data_dict[k][linenr]
             try:
-                timeseries[iteration][reftype]['fraction'] = timeseries[iteration][reftype][numerator]/float(timeseries[iteration][reftype][denominator])
+                den = float(timeseries[iteration][reftype][denominator])
+                timeseries[iteration][reftype]['fraction'] = timeseries[iteration][reftype][numerator]/den
             except ZeroDivisionError:
                 print("At iteration %s, found %s matched atoms and a denominator of %s for reftype %s..." % (iteration, timeseries[iteration][reftype][numerator], timeseries[iteration][reftype][denominator], reftype))
                 raise
 
     return timeseries
 
-def scores_vs_time(timeseries, numerator = 'fractionmatched'
-        ):
+def scores_vs_time(timeseries, numerator = 'fractionmatched'):
     """Process a timeseries as read by load_trajectory and return the fraction of each reference atom type found at each time.
 
 
