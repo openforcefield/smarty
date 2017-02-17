@@ -276,16 +276,20 @@ class AtomTypeSampler(object):
             graph.add_node(atomtype, bipartite=1)
         # Add edges.
         atoms_in_common = dict()
+        # Make an entry in the dictionary for each pair of types
         for current_atomtype in current_atomtypes:
             for reference_atomtype in reference_atomtypes:
                 atoms_in_common[(current_atomtype,reference_atomtype)] = 0
+        # Loop through all molecules
         for (current_typed_molecule, reference_typed_molecule) in zip(molecules, self.reference_typed_molecules):
             current_atoms = self._GetAtoms(current_typed_molecule, self.element)
             reference_atoms = self._GetAtoms(reference_typed_molecule, self.element)
+            # For each atom add a count to the current/referance atomtype pair
             for (current_typed_atom, reference_typed_atom) in zip(current_atoms, reference_atoms):
                 current_atomtype = current_typed_atom.GetStringData(self.typetag)
                 reference_atomtype = reference_typed_atom.GetType()
                 atoms_in_common[(current_atomtype,reference_atomtype)] += 1
+        # Make weighted edges connecting the current and reference nodes
         for current_atomtype in current_atomtypes:
             for reference_atomtype in reference_atomtypes:
                 weight = atoms_in_common[(current_atomtype,reference_atomtype)]
@@ -293,7 +297,7 @@ class AtomTypeSampler(object):
         elapsed_time = time.time() - initial_time
         if self.verbose: print('Graph creation took %.3f s' % elapsed_time)
 
-        # Compute maximum match
+        # Compute maximum match using networkx algorithm
         if self.verbose: print('Computing maximum weight match...')
         initial_time = time.time()
         mate = nx.algorithms.max_weight_matching(graph, maxcardinality=False)
@@ -397,9 +401,9 @@ class AtomTypeSampler(object):
         -------
         True if atomtype has at least 1 alpha substituent otherwise False
         """
-        # TODO: check does this work if you're using replacements
-        # CCB: I don't think it will work!
-        if atom1type[0].find("$") != -1:
+        # Alpha atoms are connected in the form [#1] --> [#1$(*~[#6])]
+        # The new characters are '$(*'
+        if '$(*' in atom1type[0]:
             return True
         else:
             return False
@@ -546,11 +550,6 @@ class AtomTypeSampler(object):
                         proposed_atomtype, proposed_typename = self.AddAlphaSubstituentAtom(atom1type, bondtype, atom2type)
                         if self.verbose: print("Attempting to create new subtype: '%s' (%s) -> '%s' (%s)" % (atom1type[0], atom1type[1], proposed_atomtype, proposed_typename))
 
-
-            # for either decorator - update proposed parent dictionary
-            proposed_parents[atom1type[0]].append( (proposed_atomtype, proposed_typename) )
-            proposed_parents[proposed_atomtype] = []
-
             # Check that we haven't already determined this atom type isn't matched in the dataset.
             if proposed_atomtype in self.atomtypes_with_no_matches:
                 if self.verbose: print("Atom type '%s' (%s) unused in dataset; rejecting." % (proposed_atomtype, proposed_typename))
@@ -560,6 +559,15 @@ class AtomTypeSampler(object):
             if proposed_atomtype in [smarts for (smarts, typename) in self.atomtypes]:
                 if self.verbose: print("Atom type '%s' (%s) is in the existing atomtype list; rejecting." % (proposed_atomtype, proposed_typename))
                 return False
+
+            # Check the proposed type name is unique
+            current_typenames = [typename for (smarts, typename) in self.atomtypes]
+            while proposed_typename in current_typenames:
+                proposed_typename += '%i' % random.randint(0,10)
+
+            # for either decorator - update proposed parent dictionary
+            proposed_parents[atom1type[0]].append( (proposed_atomtype, proposed_typename) )
+            proposed_parents[proposed_atomtype] = []
 
             # Insert atomtype immediately after.
             proposed_atomtypes.append( (proposed_atomtype, proposed_typename) )
