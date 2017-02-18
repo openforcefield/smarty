@@ -233,3 +233,7 @@ smarty --basetypes atomtypes/basetypes.smarts \
     --decoratorbehavior simple-decorators >> Simple-decorators.log
 ```
 
+## More smarty tests
+We have done more extensive testing of this tool, but the results are 
+a bit bulky to keep on GitHub. We maintain a public (Google Drive Directory)[https://drive.google.com/drive/folders/0BwF2-3puCvfEeWNuNnlsTm1CTlU?usp=sharing]
+with these results. Please note it is a work in progress so documentation is on going.
