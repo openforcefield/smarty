@@ -14,6 +14,10 @@
 [#35]   bromine
 [#53]   iodine
 
+% electron withdrawing groups
+[#7!-1,#8,#16]              ewg2
+[#7!-1,#8!-1,#16!-1,$halogen]     ewg1
+
 % halogens
 [$smallhals,$largehals]     halogen
 [$fluorine,$chlorine]       smallhals
