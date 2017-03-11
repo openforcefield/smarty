@@ -22,13 +22,6 @@ and from the Codera lab, Josh Fass
 # GLOBAL IMPORTS
 #=============================================================================================
 
-import sys
-import string
-
-from optparse import OptionParser # For parsing of command line arguments
-
-import os
-import math
 import copy
 import openeye.oechem
 import openeye.oeomega
@@ -38,7 +31,7 @@ from openeye.oechem import *
 from openeye.oeomega import *
 from openeye.oequacpac import *
 
-import networkx
+import networkx as nx
 import time
 
 from  smarty.environment import *
@@ -503,7 +496,6 @@ class FragmentSampler(object):
         # Create bipartite graph (U,V,E) matching current types U with reference types V via edges E with weights equal to number of types in common.
         self.log.write('Creating graph matching current types with reference types...\n')
         initial_time = time.time()
-        import networkx as nx
         graph = nx.Graph()
 
         # Get current types and reference types
@@ -951,6 +943,7 @@ class FragmentSampler(object):
             smirks = new_env.asSMIRKS()
             if self.replacements is not None:
                 smirks = OESmartsLexReplace(smirks, self.replacements)
+            # check the SMIRKS pattern is valid
             if not OEParseSmarts(qmol, smirks):
                 self.log.write("Type '%s' (%s) is invalid; rejecting.\n" % (new_env.label, new_env.asSMIRKS()))
                 return False
@@ -1118,7 +1111,7 @@ class FragmentSampler(object):
         -----------
         typelist - list of lists with form [smirks, typename]
         typecounts (dict) - number of matches for each fragment type
-        molecule_typecounds (dict) - number of molecules that contain each fragment type
+        molecule_typecounts (dict) - number of molecules that contain each fragment type
         type_matches : list of tuples (current_typelabel, reference_typelabel, counts)
             Best correspondence between current and reference types, along with number of fragment types equivalently typed in reference molecule set.
         """
@@ -1190,7 +1183,8 @@ class FragmentSampler(object):
             fraction of total types matched successfully at end of run
 
         """
-        self.traj = []
+        self.traj = open("%s.csv" % self.output,'w')
+        self.traj.write('Iteration,Index,Smarts,Typename,ParentTypename,RefType,Matches,Molecules,FractionMatched,Denominator\n')
         for iteration in range(niterations):
             itinfo = "Iteration %d / %d" % (iteration, niterations)
             self.log.write(itinfo+'\n')
@@ -1204,7 +1198,7 @@ class FragmentSampler(object):
             lines = self.save_type_statistics(typelist, typecounts, molecule_typecounts, type_matches=self.type_matches)
             # Add lines to trajectory with iteration number:
             for l in lines:
-                self.traj.append('%i,%s\n' % (iteration, l))
+                self.traj.write('%i,%s\n' % (iteration, l))
 
             if accepted:
                 self.log.write('Accepted.\n')
@@ -1224,11 +1218,6 @@ class FragmentSampler(object):
             self.log.write('\n\n')
             if verbose: print('')
 
-        # Make trajectory file
-        f = open("%s.csv" % self.output, 'w')
-        start = ['Iteration,Index,Smarts,ParNum,ParentParNum,RefType,Matches,Molecules,FractionMatched,Denominator\n']
-        f.writelines(start + self.traj)
-        f.close()
 
         #Compute final type stats
         typelist = [ [env.asSMIRKS(), env.label] for env in self.envList]
@@ -1239,6 +1228,10 @@ class FragmentSampler(object):
         self.log.write("%s type hierarchy: \n" % self.typetag)
         roots = [e.label for e in self.baseTypes]
         self.write_parent_tree(roots, '\t', verbose)
+
+        # close files
+        self.log.close()
+        self.traj.close()
         return fraction_matched
 
     def write_results_smarts_file(self):
