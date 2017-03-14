@@ -287,7 +287,7 @@ class FragmentSampler(object):
             self.ref_labels = [l[self.forcetype] for l in labels]
 
             # get smiles to key reference typed molecule dictionary
-            smiles = [OEMolToSmiles(mol) for mol in molecules]
+            smiles = [OECreateIsoSmiString(mol) for mol in molecules]
             # Extract list of reference SMIRKS types present in molecules
             for idx, label_set in enumerate(self.ref_labels):
                 smile = smiles[idx]
@@ -438,7 +438,7 @@ class FragmentSampler(object):
         """
         typeDict = dict()
         for mol in self.molecules:
-            smiles = OEMolToSmiles(mol)
+            smiles = OECreateIsoSmiString(mol)
             typeDict[smiles] = {}
             for [smirks, typename] in typelist:
                 matches = self.get_SMIRKS_matches(mol, smirks)
