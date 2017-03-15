@@ -29,6 +29,7 @@ import copy
 import re
 import numpy
 import random
+from smarty import utils
 
 import openeye.oechem
 import openeye.oeomega
@@ -111,7 +112,7 @@ class AtomTyper(object):
             print(pat,type,smarts)
         return
 
-    def assignTypes(self,mol,samplertype="original"):
+    def assignTypes(self,mol,element = 0):
         # Assign null types.
         for atom in mol.GetAtoms():
             atom.SetStringData(self.pattyTag, "")
@@ -125,10 +126,13 @@ class AtomTyper(object):
                     matchpair.target.SetStringData(self.pattyTag,type)
 
         # Check if any atoms remain unassigned.
-        if samplertype == "original":
-            for atom in mol.GetAtoms():
-                if atom.GetStringData(self.pattyTag)=="":
-                    raise AtomTyper.TypingException(mol, atom)
+        if element > 0:
+            mol_atoms = mol.GetAtoms(OEHasAtomicNum(element))
+        else:
+            mol_atoms = mol.GetAtoms()
+        for atom in mol_atoms:
+            if atom.GetStringData(self.pattyTag)=="":
+                raise AtomTyper.TypingException(mol, atom)
         return
 
     def debugTypes(self,mol):
@@ -162,7 +166,10 @@ class AtomTyper(object):
             return None
 
         if not os.path.exists(filename):
-            raise Exception("File '%s' not found." % filename)
+            built_in = utils.get_data_filename(filename)
+            if not os.path.exists(built_in):
+                raise Exception("File '%s' not found." % filename)
+            filename = built_in
 
         typelist = list()
         ifs = open(filename)
