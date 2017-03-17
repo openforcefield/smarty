@@ -161,7 +161,7 @@ class AtomTypeSampler(object):
         self.basetypes = copy.deepcopy(used_basetypes)
 
         # Check if there is [*] and [$ewg] atoms
-        self.generic_basetypes = [['[*]', 'c_anyatom'],['[$ewg]', 'c_ewgatom']]
+        self.generic_basetypes = [['[*]', 'c_anyatom'],['$ewg1', 'c_ewgatom']]
         self.type_molecules(self.generic_basetypes, tmpmolecules)
         [ basetype_typecounts_generic, molecule_basetype_typecounts_generic] = self.compute_type_statistics( self.generic_basetypes, tmpmolecules)
         used_generic_basetype = list()
