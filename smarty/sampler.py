@@ -88,6 +88,7 @@ class AtomTypeSampler(object):
         # Read atomtypes (initial and base) and decorators.
         self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
         self.basetypes = AtomTyper.read_typelist(basetypes_filename)
+        print "BASE TYPES" + str(self.basetypes)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
 
@@ -96,6 +97,10 @@ class AtomTypeSampler(object):
 
         # Save bond list to use throughout
         bondset = [("-","singly"), ("=", "doubly"), ("#","triply"), (":", "aromatic")]
+
+        # Check all SMART strings that  are used as a base type
+        
+
 
         # Calculate which bonds in set are used
         bond_typelist = [("[*]%s[*]" %bond, name) for (bond, name) in bondset]
@@ -154,6 +159,17 @@ class AtomTypeSampler(object):
                 if self.verbose: print("Removing basetype '%s' ('%s'), which is unused." % (smarts, atom_type))
         # Atom basetypes to create new smart strings
         self.basetypes = copy.deepcopy(used_basetypes)
+
+        # Check if there is [*] and [$ewg] atoms
+        self.generic_basetypes = [['[*]', 'c_anyatom'],['[$ewg]', 'c_ewgatom']]
+        self.type_molecules(self.generic_basetypes, tmpmolecules)
+        [ basetype_typecounts_generic, molecule_basetype_typecounts_generic] = self.compute_type_statistics( self.generic_basetypes, tmpmolecules)
+        used_generic_basetype = list()
+        for (smarts, atom_type) in self.generic_basetypes:
+            if basetype_typecounts_generic[atom_type] > 0:
+                used_generic_basetype.append(( smarts, atom_type) )
+        self.basetypes.append(used_generic_basetype)
+        print "**************** BASE TYPES: ***************************" + str(self.basetypes)
 
         # Type all molecules with current typelist to ensure that starting types are sufficient.
         self.type_molecules(self.atomtypes, self.molecules, self.element)
