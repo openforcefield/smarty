@@ -1,4 +1,6 @@
 % atom types
+[$ewg1] ewg1
+[*]     any_atom
 [#1]    hydrogen
 [#6]    carbon
 [#7]    nitrogen
@@ -10,5 +12,3 @@
 [#34]   selenium
 [#35]   bromine
 [#53]   iodine
-[*]     any_atom
-[$ewg1] ewg1

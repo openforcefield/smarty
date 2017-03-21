@@ -103,7 +103,7 @@ class AtomTypeSampler(object):
         # Check all SMART strings that are used as a base type
         for (smarts, atom_type) in self.basetypes:
             check_flag = self.smarts_matches(smarts)
-            if check_flag == True:
+            if check_flag:
                 used_basetypes.append( ( smarts, atom_type) )
             else:
                 self.atomtypes_with_no_matches.add( smarts )
@@ -167,12 +167,9 @@ class AtomTypeSampler(object):
         ## Atom basetypes to create new smart strings
         #self.basetypes = copy.deepcopy(used_basetypes)
         
-        print "typing..."
 
         # Type all molecules with current typelist to ensure that starting types are sufficient.
         self.type_molecules(self.atomtypes, self.molecules, self.element)
-
-        print "computing..."
 
         # Compute atomtype statistics on molecules for current atomtype set
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules, self.element)
@@ -181,21 +178,21 @@ class AtomTypeSampler(object):
             self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
 
         ## Track only used atomtypes and add unused to atomtypes with no matches
-        #used_initial_atomtypes = list()
-        #for (smarts, atom_type) in self.atomtypes:
-        #    if atom_typecounts[atom_type] > 0:
-        #        used_initial_atomtypes.append( (smarts, atom_type) )
-        #    else:
-        #        self.atomtypes_with_no_matches.add( smarts )
-        #        if self.verbose: print("Removing initial atom type '%s', as it matches no atoms" % smarts)
-        #self.atomtypes = copy.deepcopy(used_initial_atomtypes)
-        #self.initial_atomtypes = copy.deepcopy(used_initial_atomtypes)
+        used_initial_atomtypes = list()
+        for (smarts, atom_type) in self.atomtypes:
+            if atom_typecounts[atom_type] > 0:
+                used_initial_atomtypes.append( (smarts, atom_type) )
+            else:
+                self.atomtypes_with_no_matches.add( smarts )
+                if self.verbose: print("Removing initial atom type '%s', as it matches no atoms" % smarts)
+        self.atomtypes = copy.deepcopy(used_initial_atomtypes)
+        self.initial_atomtypes = copy.deepcopy(used_initial_atomtypes)
 
         ## Type molecules again with the updated atomtype list
-        #self.type_molecules(self.atomtypes, self.molecules, self.element)
+        self.type_molecules(self.atomtypes, self.molecules, self.element)
 
-        ## These are atomtypes where not all children have been matched
-        #self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
+        # These are atomtypes where not all children have been matched
+        self.unmatched_atomtypes = copy.deepcopy(self.atomtypes)
 
         # Creat dictionary to store children of initial atom types
         self.parents = dict()
