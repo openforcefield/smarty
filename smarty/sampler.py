@@ -144,32 +144,6 @@ class AtomTypeSampler(object):
                 self.atomtypes = [(smarts, typename)] + self.atomtypes
                 if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename) )
 
-        # Maintain a list of SMARTS matches without any atom type matches in the dataset
-        # This is used for efficiency.
-        # self.atomtypes_with_no_matches = set()
-
-        #self.type_molecules(self.basetypes, tmpmolecules)
-        #[ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, tmpmolecules)
-        #if self.verbose:
-        #    print("MATCHED BASETYPES:")
-        #    self.show_type_statistics(self.basetypes, basetype_typecounts, molecule_basetype_typecounts)
-
-        # store used basedtypes for reference later
-        #used_basetypes = list()
-
-        ## Track only used base types and add unused to atomtypes with no matches
-        #for (smarts, atom_type) in self.basetypes:
-        #    # If this type is used, then track it
-        #    if basetype_typecounts[atom_type] > 0:
-        #       used_basetypes.append( ( smarts, atom_type) )
-        #    # If unused, it will be removed and the smarts stored in the no match list
-        #    else:
-        #        self.atomtypes_with_no_matches.add( smarts )
-        #        if self.verbose: print("Removing basetype '%s' ('%s'), which is unused." % (smarts, atom_type))
-        ## Atom basetypes to create new smart strings
-        #self.basetypes = copy.deepcopy(used_basetypes)
-        
-
         # Type all molecules with current typelist to ensure that starting types are sufficient.
         self.type_molecules(self.atomtypes, self.molecules, self.element)
 
@@ -243,7 +217,8 @@ class AtomTypeSampler(object):
         -------
         matched: boolean, True=smarts matches a molecule, False has no matches
         """
-        # Create bindings list.
+        # Create bindings list for the replacements (uses the replacements
+        # file)
         bindings = list()
         if self.replacements is not None:
             for [smarts,shortname] in self.replacements:
