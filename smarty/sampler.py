@@ -88,7 +88,6 @@ class AtomTypeSampler(object):
         # Read atomtypes (initial and base) and decorators.
         self.atomtypes = AtomTyper.read_typelist(initialtypes_filename)
         self.basetypes = AtomTyper.read_typelist(basetypes_filename)
-        print "BASE TYPES" + str(self.basetypes)
         self.decorators = AtomTyper.read_typelist(decorators_filename)
         self.replacements = AtomTyper.read_typelist(replacements_filename)
 
@@ -104,11 +103,14 @@ class AtomTypeSampler(object):
         for (smarts, atom_type) in self.basetypes:
             check_flag = self.smarts_matches(smarts)
             if check_flag:
+                # Keep used base types
                 used_basetypes.append( ( smarts, atom_type) )
             else:
+                # Remove unused base types
                 self.atomtypes_with_no_matches.add( smarts )
         self.basetypes = copy.deepcopy(used_basetypes)
-        print "BASE TYPES AFTER CHECK" + str(self.basetypes)
+        if verbose:
+            print("USED BASE TYPES: %s" % self.basetypes)
 
         # Calculate which bonds in set are used
         bond_typelist = [("[*]%s[*]" %bond, name) for (bond, name) in bondset]
@@ -248,8 +250,6 @@ class AtomTypeSampler(object):
                 bindings.append( (shortname, smarts) )
         # Perform binding replacements
         smarts = OESmartsLexReplace(smarts, bindings)
-        #smarts = OESmartsLexReplace("c[$halogen]", bindings)
-        print("SMARTS =", smarts)
 
         # create query
         qmol = OEQMol()
