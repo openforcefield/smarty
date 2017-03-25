@@ -221,8 +221,8 @@ class AtomTypeSampler(object):
         # file)
         bindings = list()
         if self.replacements is not None:
-            for [smarts,shortname] in self.replacements:
-                bindings.append( (shortname, smarts) )
+            for [smarts_s,shortname] in self.replacements:
+                bindings.append( (shortname, smarts_s) )
         # Perform binding replacements
         smarts = OESmartsLexReplace(smarts, bindings)
 
