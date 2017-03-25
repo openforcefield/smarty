@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/open-forcefield-group/smarty.svg?branch=master)](https://travis-ci.org/open-forcefield-group/smarty)
+[![DOI](https://zenodo.org/badge/60921138.svg)](https://zenodo.org/badge/latestdoi/60921138)
 
 # `smarty`: Exploring Bayesian atom type sampling
 
@@ -82,10 +83,10 @@ We also specify a number of starting types, "initial types" which can be the sam
 We have two sampler options for SMARTY which differ in how focused the sampling is. The original sampler samples over all elements/patterns at once, whereas the elemental sampler focuses on sampling only one specific element. The principle of sampling is the same; the only change is in which elements we sample over. To sample only over a single element, such as oxygen, for example, we use the elemental sampler to focus on that element.
 
 
-### Generating New SMARTS patterns 
+### Generating New SMARTS patterns
 
 There are two options for how to change SMARTS patterns when creating new atom types.
-One is using combinatorial decorators (default) and the other is using simple decorators (`--decoratorbehavior=simple-decorators`). However, it should be noted that we have found the simple decorators insufficient at distinguishing atomtypes even for the most simple sets of molecules. 
+One is using combinatorial decorators (default) and the other is using simple decorators (`--decoratorbehavior=simple-decorators`). However, it should be noted that we have found the simple decorators insufficient at distinguishing atomtypes even for the most simple sets of molecules.
 
 **Combinatorial Decorators**
 
@@ -172,14 +173,14 @@ Currently, the acceptance criteria does not include the full Metropolis-Hastings
 
 The input option `--element` allows a user to specify which atoms types to sample based on atomic number. The default input is 0 (corresponding to no specified atomic number) and will attempt to match all atom types. If an element number is given (i.e. `--element=1` for hydrogen) only atoms with that atomic number are considered. Specifying an element number does not affect any other smarty behavior.  
 
-Finally, here is a complete list of input options for smarty. Under `usage` all bracketed parameters are optional. 
+Finally, here is a complete list of input options for smarty. Under `usage` all bracketed parameters are optional.
 ```
 Usage:     Sample over atom types, optionally attempting to match atom types in a reference typed set of molecules.
 
-    usage: smarty --basetypes smartsfile --initialtypes smartsfile 
-            --decorators smartsfile --molecules molfile 
-            [--element atomicnumber --substitutions smartsfile --reference molfile 
-            --decoratorbehavior combinatorial-decorators/simple-decorators 
+    usage: smarty --basetypes smartsfile --initialtypes smartsfile
+            --decorators smartsfile --molecules molfile
+            [--element atomicnumber --substitutions smartsfile --reference molfile
+            --decoratorbehavior combinatorial-decorators/simple-decorators
             --iterations niterations --temperature temperature --trajectory trajectorfile
             --plot plotfile]
 
@@ -188,7 +189,7 @@ Usage:     Sample over atom types, optionally attempting to match atom types in 
             --decorators=atomtypes/decorators.smarts --substitutions=atomtypes/substitutions.smarts \
             --molecules=molecules/zinc-subset-tripos.mol2.gz --reference=molecules/zinc-subset-parm@frosst.mol2.gz \
             --iterations 1000 --temperature=0.1
-    
+
 
 Options:
   --version             show program's version number and exit
@@ -373,4 +374,3 @@ It can also be of interest to know what SMIRFF parameters would be applied to pa
 
 [1] Green PJ. Reversible jump Markov chain Monte Carlo computation and Bayesian model determination. Biometrika 82:711, 1995.
 http://dx.doi.org/10.1093/biomet/82.4.711
-
