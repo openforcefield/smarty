@@ -101,8 +101,8 @@ class AtomTypeSampler(object):
         self.atomtypes_with_no_matches = set()
         # Check all SMART strings that are used as a base type
         for (smarts, atom_type) in self.basetypes:
-            check_flag = self.smarts_matches(smarts)
-            if check_flag:
+            check_basetype = self.smarts_matches(smarts)
+            if check_basetype:
                 # Keep used base types
                 used_basetypes.append( ( smarts, atom_type) )
             else:
@@ -153,7 +153,7 @@ class AtomTypeSampler(object):
             print("MATCHED INITIAL TYPES:")
             self.show_type_statistics(self.atomtypes, atom_typecounts, molecule_typecounts)
 
-        ## Track only used atomtypes and add unused to atomtypes with no matches
+        # Track only used atomtypes and add unused to atomtypes with no matches
         used_initial_atomtypes = list()
         for (smarts, atom_type) in self.atomtypes:
             if atom_typecounts[atom_type] > 0:
@@ -164,7 +164,7 @@ class AtomTypeSampler(object):
         self.atomtypes = copy.deepcopy(used_initial_atomtypes)
         self.initial_atomtypes = copy.deepcopy(used_initial_atomtypes)
 
-        ## Type molecules again with the updated atomtype list
+        # Type molecules again with the updated atomtype list
         self.type_molecules(self.atomtypes, self.molecules, self.element)
 
         # These are atomtypes where not all children have been matched
