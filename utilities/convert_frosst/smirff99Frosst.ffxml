@@ -48,7 +48,7 @@
     <Bond smirks="[#7:1]~[#8X1:2]" id="b40" k="700.0" length="1.30"/>
     <Bond smirks="[#8X2:1]-[#8X2:2]" id="b41" k="600.0" length="1.46"/>
     <Bond smirks="[#16:1]-[#6:2]" id="b42" k="474.0" length="1.810"/>
-    <Bond smirks="[#16X2:1]-[#1:2]" id="b43" k="548.0" length="1.336"/>
+    <Bond smirks="[#16:1]-[#1:2]" id="b43" k="548.0" length="1.336"/>
     <Bond smirks="[#16:1]-[#16:2]" id="b44" k="332.0" length="2.038"/>
     <Bond smirks="[#16X2,#16X1-1,#16X3+1:1]-[#6X4:2]" id="b45" k="474.0" length="1.81"/>
     <Bond smirks="[#16X2,#16X1-1,#16X3+1:1]-[#6X3:2]" id="b46" k="600.0" length="1.74"/>
