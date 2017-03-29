@@ -139,10 +139,13 @@ class AtomTypeSampler(object):
 
         # Add any base types not already there to the initial types
         initial_smarts = [ smarts for (smarts, name) in self.atomtypes ]
+        missing_basetypes = list()
         for [smarts, typename] in self.basetypes:
             if smarts not in initial_smarts:
-                self.atomtypes = [(smarts, typename)] + self.atomtypes
-                if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename) )
+                missing_basetypes.append( (smarts, typename) )
+                if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename))
+        
+        self.atomtypes = missing_basetypes + self.atomtypes
 
         # Type all molecules with current typelist to ensure that starting types are sufficient.
         self.type_molecules(self.atomtypes, self.molecules, self.element)
