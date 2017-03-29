@@ -98,10 +98,16 @@ BOND
 [#7:1]~[#8X1:2]        350.  1.30    Frosst generic
 # O-O peroxide
 [#8X2:1]-[#8X2:2]      300.  1.46    smirff generic   bond length from JACSv106p6146-6149(1984)
-# bonds to divalent S
+# Generic sulfur bonds
 [#16:1]-[#6:2]                237.0  1.810   parm99 CT-SH (removed X4 3/16/17)
-[#16:1]-[#1:2]                274.0  1.336   parm99 SH-HS
+[#16:1]-[#1:2]                274.0  1.336   parm99 SH-HS (removed X2 3/28/17)
 [#16:1]-[#16:2]                 166.0  2.038   parm99 S_-S
+# Sulfur halogen bonds
+[#16:1]-[#9:2]     375.   1.6
+[#16:1]-[#17:2]    230.   2.0
+[#16:1]-[#35:2]    170.   2.2
+[#16:1]-[#53:2]    75.    2.6
+# bonds to divalent S
 [#16X2,#16X1-1,#16X3+1:1]-[#6X4:2]  237.0  1.81    Frosst generic by analogy with parm99 CT-SH
 [#16X2,#16X1-1,#16X3+1:1]-[#6X3:2]  300.0    1.74    Frosst generic
 [#16X2:1]-[#7:2]      300.0    1.69    Frosst generic
@@ -114,8 +120,6 @@ BOND
 [#16X4,#16X3:1]~[#8X1:2]   300.  1.44    Frosst generic
 # Carbonothioyl bond
 [#16:1]=[#6:2]    300   1.7  parm@Frosst for CA~SD and CM~SD
-# S-P
-[#16:1]-[#15:2]   150   2.1  rough estimate from GAFF2 by CCB 3/16/2017
 # bonds to P (implied hypervalent)
 [#15:1]-[#1:2]        200.   1.4     rough estimate from GAFF2 by CCB 3/16/2017
 [#15:1]~[#6:2]         160.  1.90    Frosst generic
@@ -124,6 +128,8 @@ BOND
 [#15:1]~[#8X2:2]                230.0  1.610   parm99 OS,OH-P
 [#15:1]~[#8X1:2]                525.0  1.480   parm99 O2-P
 [#15:1]~[#9:2]        300.0    1.639   Frosst F_-P calc: B3LYP/6-311G(d,p) Jan 13 2006
+# S-P
+[#16:1]-[#15:2]       150    2.1  rough estimate from GAFF2 by CCB 3/16/2017
 [#15:1]=[#16X1:2]     230.0  1.98    Frosst P-SD RHF/6-31G(d,p) Sept 9 2009 Force constant Taken from OS-P_-> JCC,7,(1986),230
 # bonds to halogen
 # C-halogen
