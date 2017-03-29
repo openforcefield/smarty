@@ -67,7 +67,7 @@ BOND
 [#6X3:1]:[#7X2,#7X3+1:2]                480.  1.34    parm99 generic
 [#6X3:1]=[#7X2,#7X3+1:2]                530.  1.30    parm99 generic
 # C~O bonds
-[#6X4:1]-[#8X2:2]               320.0  1.410   parm99 aliphatic carbon-oxygen Csp3-O
+[#6:1]-[#8:2]               320.0  1.410   parm99 aliphatic carbon-oxygen Csp3-O (CCB changed from [#6X4:1]-[#8X2:2] on 3/28/17)
 [#6X4:1]-[#8X2H0:2]             320.0  1.370   Frosst Csp3-ether oxygen in AlkEthOH; R0 xray
 [#6X3:1]-[#8X2:2]               350.   1.326   Frosst generic
 [#6X3:1]-[#8X2H1:2]             450.0  1.364   parm99 phenol C-OH
@@ -80,14 +80,14 @@ BOND
 [#6X2:1]-[#6:2]       350.0    1.440   Frosst generic
 [#6X2:1]-[#6X4:2]     350.0    1.468   Frosst C2-CT RHF/6-31G(d,p) opt estimated force constant
 [#6X2:1]=[#6X3:2]     549.0    1.35    smirff generic allene is a regular double bond
-[#6X2:1]#[#7:2]     350.0    1.188   Frosst C2-NL from C2-C2
+[#6:1]#[#7:2]     350.0    1.188   Frosst C2-NL from C2-C2 (CCB removed X2 on carbon 3/28/17)
 [#6X2:1]#[#6X2:2]     350.0    1.188   Frosst C2-C2 RHF/6-31G(d,p) opt estimated force constant
 [#6X2:1]-[#8X2:2]     350.     1.326   smirff generic estimated from trivalentC-Odivalent
 [#6X2:1]-[#7:2]       427.0    1.38    smirff generic estimated from trivalentC-Ntrivalent
 [#6X2:1]=[#7:2]       427.0    1.17    smirff R0 from -N=C=S CanJChem_v50p1315(1976)
 [#6X2:1]=[#16:2]      427.0    1.54    smirff R0 from -N=C=S CanJChem_v50p1315(1976)
 # N-N bonds
-[#7X3:1]-[#7X3:2]      380.  1.40    Frosst generic
+[#7:1]-[#7:2]      380.  1.40    Frosst generic (CCB removed X3 from both N 3/28/17)
 [#7X3:1]-[#7X2:2]      340.  1.33    Frosst generic
 [#7X2:1]-[#7X2:2]      340.  1.33    Frosst generic
 [#7:1]:[#7:2]          340.  1.33    Frosst generic
@@ -103,10 +103,10 @@ BOND
 [#16:1]-[#1:2]                274.0  1.336   parm99 SH-HS (removed X2 3/28/17)
 [#16:1]-[#16:2]                 166.0  2.038   parm99 S_-S
 # Sulfur halogen bonds
-[#16:1]-[#9:2]     375.   1.6
-[#16:1]-[#17:2]    230.   2.0
-[#16:1]-[#35:2]    170.   2.2
-[#16:1]-[#53:2]    75.    2.6
+[#16:1]-[#9:2]     375.   1.6 rough estimate from GAFF2 by CCB 3/28/2017 
+[#16:1]-[#17:2]    230.   2.0 rough estimate from GAFF2 by CCB 3/28/2017 
+[#16:1]-[#35:2]    170.   2.2 rough estimate from GAFF2 by CCB 3/28/2017 
+[#16:1]-[#53:2]    75.    2.6 rough estimate from GAFF2 by CCB 3/28/2017
 # bonds to divalent S
 [#16X2,#16X1-1,#16X3+1:1]-[#6X4:2]  237.0  1.81    Frosst generic by analogy with parm99 CT-SH
 [#16X2,#16X1-1,#16X3+1:1]-[#6X3:2]  300.0    1.74    Frosst generic
