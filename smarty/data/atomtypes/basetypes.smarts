@@ -1,4 +1,7 @@
 % atom types
+[*]     any_atom
+[$ewg1] ewg1
+[$ewg2] ewg2
 [#1]    hydrogen
 [#6]    carbon
 [#7]    nitrogen

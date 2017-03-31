@@ -97,6 +97,23 @@ class AtomTypeSampler(object):
         # Save bond list to use throughout
         bondset = [("-","singly"), ("=", "doubly"), ("#","triply"), (":", "aromatic")]
 
+        used_basetypes = list()
+        self.atomtypes_with_no_matches = set()
+        # Check all SMART strings that are used as a base type
+        for (smarts, atom_type) in self.basetypes:
+            check_basetype = self.smarts_matches(smarts)
+            if check_basetype:
+                # Keep used base types
+                used_basetypes.append( ( smarts, atom_type) )
+            else:
+                # Remove unused base types
+                self.atomtypes_with_no_matches.add( smarts )
+        self.basetypes = copy.deepcopy(used_basetypes)
+        if verbose:
+            print("USED BASE TYPES:")
+            for (smarts, typename) in self.basetypes:
+                print("%10s %25s" % (smarts, typename))
+
         # Calculate which bonds in set are used
         bond_typelist = [("[*]%s[*]" %bond, name) for (bond, name) in bondset]
         tmpmolecules = copy.deepcopy(molecules)
@@ -124,39 +141,17 @@ class AtomTypeSampler(object):
 
         # Add any base types not already there to the initial types
         initial_smarts = [ smarts for (smarts, name) in self.atomtypes ]
+        missing_basetypes = list()
         for [smarts, typename] in self.basetypes:
             if smarts not in initial_smarts:
-                self.atomtypes = [(smarts, typename)] + self.atomtypes
-                if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename) )
-
-        # Maintain a list of SMARTS matches without any atom type matches in the dataset
-        # This is used for efficiency.
-        self.atomtypes_with_no_matches = set()
-
-        tmpmolecules = copy.deepcopy(molecules)
-        self.type_molecules(self.basetypes, tmpmolecules)
-        [ basetype_typecounts, molecule_basetype_typecounts] = self.compute_type_statistics( self.basetypes, tmpmolecules)
-        if self.verbose:
-            print("MATCHED BASETYPES:")
-            self.show_type_statistics(self.basetypes, basetype_typecounts, molecule_basetype_typecounts)
-
-        # store used basedtypes for reference later
-        used_basetypes = list()
-
-        # Track only used base types and add unused to atomtypes with no matches
-        for (smarts, atom_type) in self.basetypes:
-            # If this type is used, then track it
-            if basetype_typecounts[atom_type] > 0:
-                used_basetypes.append( ( smarts, atom_type) )
-            # If unused, it will be removed and the smarts stored in the no match list
-            else:
-                self.atomtypes_with_no_matches.add( smarts )
-                if self.verbose: print("Removing basetype '%s' ('%s'), which is unused." % (smarts, atom_type))
-        # Atom basetypes to create new smart strings
-        self.basetypes = copy.deepcopy(used_basetypes)
+                missing_basetypes.append( (smarts, typename) )
+                if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename))
+        
+        self.atomtypes = missing_basetypes + self.atomtypes
 
         # Type all molecules with current typelist to ensure that starting types are sufficient.
         self.type_molecules(self.atomtypes, self.molecules, self.element)
+
         # Compute atomtype statistics on molecules for current atomtype set
         [atom_typecounts, molecule_typecounts] = self.compute_type_statistics(self.atomtypes, self.molecules, self.element)
         if self.verbose:
@@ -215,6 +210,36 @@ class AtomTypeSampler(object):
                     atomtype = atom.GetType()
                     self.reference_atomtypes_atomcount[atomtype] += 1
         return
+
+    def smarts_matches(self, smarts):
+        """
+        This method returns true if the provided SMARTS pattern is in 
+        at least one molecule
+        Parameters
+        ----------
+        smarts: str, SMARTS pattern
+        Returns
+        -------
+        matched: boolean, True=smarts matches a molecule, False has no matches
+        """
+        # Create bindings list for the replacements (uses the replacements
+        # file)
+        bindings = list()
+        if self.replacements is not None:
+            for [smarts_s,shortname] in self.replacements:
+                bindings.append( (shortname, smarts_s) )
+        # Perform binding replacements
+        smarts = OESmartsLexReplace(smarts, bindings)
+
+        # create query
+        qmol = OEQMol()
+        if not OEParseSmarts(qmol, smarts):
+            raise Exception("Error parsing SMARTS %s" % smarts)
+        ss = OESubSearch(qmol)
+        for mol in self.molecules:
+            if ss.SingleMatch(mol):
+                return True
+        return False
 
     def _GetAtoms(self, molecule, element = 0):
         """
