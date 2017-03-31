@@ -110,7 +110,9 @@ class AtomTypeSampler(object):
                 self.atomtypes_with_no_matches.add( smarts )
         self.basetypes = copy.deepcopy(used_basetypes)
         if verbose:
-            print("USED BASE TYPES: %s" % self.basetypes)
+            print("USED BASE TYPES:")
+            for (smarts, typename) in self.basetypes:
+                print("%10s %25s" % (smarts, typename))
 
         # Calculate which bonds in set are used
         bond_typelist = [("[*]%s[*]" %bond, name) for (bond, name) in bondset]
