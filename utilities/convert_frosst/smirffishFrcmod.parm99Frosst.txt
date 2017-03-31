@@ -194,7 +194,7 @@ ANGL
 [*:1]~[#7X2+0:2]~[*:3]   70.  120.    Frosst generic divalent conjugated Nsp2
 [#1:1]-[#7X2+0:2]~[*:3]  50.  120.    Frosst generic divalent conjugated Nsp2
 # nitro group
-[#6:1]-[#7X3:2](~[#8X1])~[#8X1:3]  70.000  117.700  Frosst CA-N2-O2 from fit to rhf/6-31G* from T.Halgren 1/26/99
+[#6,#7,#8:1]-[#7X3:2](~[#8X1])~[#8X1:3]  70.000  117.700  Frosst CA-N2-O2 from fit to rhf/6-31G* from T.Halgren 1/26/99
 [#8X1:1]~[#7X3:2]~[#8X1:3]  70.000  124.500  Frosst O2-N2-O2 from fit to rhf/6-31G* from T.Halgren 1/26/99
 # Nsp
 [*:1]~[#7X2:2]~[#7X1:3]   70.0  180.0   Frosst generic smirff only sp carbons are linear
