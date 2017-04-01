@@ -26,8 +26,8 @@
     <Bond smirks="[#6X3:1]-[#8X2H1:2]" id="b18" k="900.0" length="1.364"/>
     <Bond smirks="[#6X3a:1]-[#8X2H0:2]" id="b19" k="900.0" length="1.323"/>
     <Bond smirks="[#6X3:1](=[#8X1])-[#8X2H0:2]" id="b20" k="640.0" length="1.340"/>
-    <Bond smirks="[#6:1]=[#8X1+0,#8X2+1:2]" id="b21" k="1140.0" length="1.229"/>
-    <Bond smirks="[#6X3:1](~[#8X1])~[#8X1:2]" id="b22" k="1312.0" length="1.250"/>
+    <Bond smirks="[#6X3:1](~[#8X1])~[#8X1:2]" id="b21" k="1312.0" length="1.250"/>
+    <Bond smirks="[#6X3:1]=[#8X1+0,#8X2+1:2]" id="b22" k="1140.0" length="1.229"/>
     <Bond smirks="[#6X3:1]:[#8X2+1:2]" id="b23" k="1140.0" length="1.28"/>
     <Bond smirks="[#6X2:1]-[#6:2]" id="b24" k="700.0" length="1.440"/>
     <Bond smirks="[#6X2:1]-[#6X4:2]" id="b25" k="700.0" length="1.468"/>
@@ -118,7 +118,7 @@
     <Angle smirks="[*:1]~[#7X2:2]~[*:3]" angle="180." id="a19" k="140.0"/>
     <Angle smirks="[*:1]~[#7X2+0:2]~[*:3]" angle="120." id="a20" k="140.0"/>
     <Angle smirks="[#1:1]-[#7X2+0:2]~[*:3]" angle="120." id="a21" k="100.0"/>
-    <Angle smirks="[#6,#7,#8:1]-[#7X3:2](~[#8X1])~[#8X1:3]" angle="117.700" id="a22" k="140.0"/>
+    <Angle smirks="[#6:1]-[#7X3:2](~[#8X1])~[#8X1:3]" angle="117.700" id="a22" k="140.0"/>
     <Angle smirks="[#8X1:1]~[#7X3:2]~[#8X1:3]" angle="124.500" id="a23" k="140.0"/>
     <Angle smirks="[*:1]~[#7X2:2]~[#7X1:3]" angle="180.0" id="a24" k="140.0"/>
     <Angle smirks="[*:1]-[#8:2]-[*:3]" angle="113." id="a25" k="100.0"/>
