@@ -271,7 +271,6 @@ class FragmentSampler(object):
                 self.log.write("removing unused element (%s) from list\n" % element)
 
         # Store reference molecules
-        self.reference_types = []
         self.reference_typed_molecules = dict()
         self.type_matches = None
         self.total_type_matches = None
@@ -296,15 +295,18 @@ class FragmentSampler(object):
                     self.reference_typename_dict[pid] = smirks
                     self.reference_typed_molecules[smile][tuple(indices)] = pid
 
-            self.reference_types = [[smirks, pid] for pid, smirks in self.reference_typename_dict.items()]
-
-            if not self.check_typed_molecules(self.reference_types):
-                raise Exception("Reference types in SMIRFF (%s) do not type all %ss in the molecules" % (self.SMIRFF, self.typetag))
+            # Check that all indices are typed for the reference
+            for smile, indicesList in self.IndexDict.items():
+                for indices in indicesList:
+                    if indices not in self.reference_typed_molecules[smile].keys():
+                        raise Exception("Reference types in SMIRFF (%s) do not \
+                                type all %ss in the molecules" % (self.SMIRFF, self.typetag))
 
             # Compute current type matches
             [self.type_matches, self.total_type_matches] = self.best_match_reference_types(typelist)
             # Count  types.
-            self.reference_type_counts = { pid : 0 for (smirks, pid) in self.reference_types }
+            self.reference_type_counts = { pid : 0 for pid, smirks in \
+                    self.reference_typename_dict.items() }
             for label_set in self.ref_labels:
                 for (atom_indices, pid, smirks) in label_set:
                     self.reference_type_counts[pid] += 1
@@ -500,7 +502,8 @@ class FragmentSampler(object):
 
         # Get current types and reference types
         current_typenames = [ typename for (smirks, typename) in typelist ]
-        reference_typenames = [ typename for (smirks, typename) in self.reference_types ]
+        reference_typenames = [ typename for typename, smirks in \
+                self.reference_typename_dict.items()]
         # check that current types are not in reference types
         if set(current_typenames) & set(reference_typenames):
             raise Exception("Current and reference type names must be unique")

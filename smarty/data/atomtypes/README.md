@@ -19,11 +19,14 @@ Atom type definitions are hierarchical, with the last match in the file taking p
 These are both used to initialize the smarty sampler.
 `basetypes` are considered more generic. 
 These are the atomtypes used to create new atomtypes.
-See the file `basetypes.smarts`
+See the file `basetypes.smarts`.
 
 `initial` types can be more complex 
 for example the files
 `initialtypes.smarts` or `initiali\_AlkEthOH.smarts`
+
+Best practices should have base and initial types that are listed from most to
+least general
 
 ### Simple and Combinatorial Decorators
 
