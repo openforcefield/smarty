@@ -2,11 +2,12 @@
 # Date: Tue Aug 25 2016
 # Author: C. I. Bayly, OpenEye Scientific Software
 #
-# Date: only last line in this section is used
+# Date: only last line in this section is used so 
 DATE
 # Updated: Many times during Fall 2016 - Winter 2017, most recently Fri. March 3, 2017
 Date: March 16, 2017
-# Author: please make sure all authors are on one line, only last one is taken 
+Date: April 4, 2017
+# Author: please make sure all authors are on one line, only last line will be used 
 AUTHOR
 C. I. Bayly, OpenEye/UC Irvine; C. C. Bannan, UC Irvine; D. L. Mobley, UC Irvine
 
@@ -207,9 +208,9 @@ ANGL
 [*:1]~[#16X4:2]~[*:3]    70.  109.5   Frosst generic diverse ANG0 (low confidence)
 [*:1]-[#16X4,#16X3+0:2]-[*:3]    60.  109.5   parm99 generic hypervalent sulfur
 [*:1]~[#16X3$(*~[#8X1,#7X2]):2]~[*:3]    70.  109.5   Frosst generic sulfinyl guess
-[*:1]=[#16X2:2]=[*:3]    70.  180.    Frosst generic divalent hypervalent e.g. isothiocyanate
 # divalent sulfur, both aliphatic and endocyclic in het5 (a la thiophene)
-[*:1]-[#16X2,#16X3+1:2]-[*:3]  60.  98.     parm99 generic divalent sulfur
+[*:1]~[#16X2,#16X3+1:2]~[*:3]  60.  98.     parm99 generic divalent sulfur
+[*:1]=[#16X2:2]=[*:3]    70.  180.    Frosst generic divalent hypervalent e.g. isothiocyanate
 [#6X3:1]-[#16X2:2]-[#6X3:3]    60.  95.     Frosst generic
 [#6X3:1]-[#16X2:2]-[#6X4:3]    60.  100.    Frosst generic
 [#6X3:1]-[#16X2:2]-[#1:3]      43.  96.     Frosst CA-SH-HS by analogy with parm94 CT-SH-HS
@@ -330,6 +331,8 @@ DIHE
 # Csp bonds dealt with later
 #
 # C-N bonds
+# generic C:N aromatic bonds (to cover our planar bases)
+[*:1]~[#7a:2]:[#6a:3]~[*:4]   1    4.80   180.    2  corresponding to X_-CA-NC-X in parm99 JCC,7,(1986),230 (CCB 4/3/2017)
 # note : the following general trivalent Nsp3 means conj N must come after
 [*:1]-[#6X4:2]-[#7X4:3]-[*:4]  1  0.156    0.0   3.0  parm99 X_-CT-N3-X  JCC,7,(1986),230
 [*:1]-[#6X4:2]-[#7X3:3]-[*:4]  1  0.300    0.0   3.0  parm99 X_-CT-NT-X  Junmei et al, 1999
@@ -347,6 +350,7 @@ DIHE
 # conj trivalent Nsp2-Csp3
 [*:1]-[#6X4:2]-[#7X3$(*~[#6X3,#6X2]):3]~[*:4]  1  0.000    0.0  -2.0  parm99 X_-CT-N2,N,N*-X  JCC,7,(1986),230
 [*:1]-[#6X4:2]-[#7X3$(*~[#6X3,#6X2]):3]~[*:4]  1  0.000    0.0   3.0  parm99 X_-CT-N2,N,N*-X  JCC,7,(1986),230
+[*:1]-[#6X4:2]-[#7X3$(*~[#8X1]):3]~[#8X1:4]     1 0.000    0.0    3.0 parm99 X-CT-N2-X or GAFF2 X-c3-no-X (CCB 4/4/2017)
 [#6X3:1]-[#7X3:2]-[#6X4:3]-[#6X3:4]  1  0.850  180.0  -2.0  parm99 C_-N_-CT-C 
 [#6X3:1]-[#7X3:2]-[#6X4:3]-[#6X3:4]  1  0.800    0.0   1.0  parm99 C_-N_-CT-C 
 [#6X4:1]-[#6X4:2]-[#7X3:3]-[#6X3:4]=[#8,#16,#7]  1  0.500  180.0  -4.0  parm99 CT-CT-N_-C  phi,psi,parm94
@@ -432,12 +436,14 @@ DIHE
 [*:1]=[#8X2+1:2]-[#6:3]~[*:4]             1  0.5    180.0     2  smirff generic oxonium guess
 #
 # S-C bonds
+# S=C bonds
+[*:1]~[#16:2]=,:[#6:3]~[*:4]  1   6.5    180.0    2.0  c=s double bond from GAFF2 (CCB 4/4/2017)
 # divalent S-C
 [*:1]-[#16X2,#16X3+1:2]-[#6:3]~[*:4]  1  0.333  180.0   2  parm99 X_-CT-S_-X  JCC,7,(1986),230
 [*:1]-[#16X2,#16X3+1:2]-[#6:3]-[#1:4] 1  0.250    0.0   3  parm99 X_-CT-SH-X  JCC,7,(1986),230
 [#6X3:1]-@[#16X2,#16X1-1,#16X3+1:2]-@[#6X3,#7X2;r5:3]=@[#6,#7;r5:4]  1  2.     180.0     2   Frosst generic divalent S in het5
 # hypervalent S-C
-[*:1]~[#16X4,#16X3+0:2]-[#6X4:3]-[*:4]  1  0.000    0.0     3  Frosst X_-SO-CT-X  guess
+[*:1]~[#16X4,#16X3!+1:2]-[#6X4:3]-[*:4]  1  0.000    0.0     3  Frosst X_-SO-CT-X  guess
 [#6X4:1]-[#16X4,#16X3+0:2]-[#6X4:3]-[#1:4]  1  0.250    0.0     1  Frosst CT-SO-CT-H1  RHF/6-41G(d,p) Dec 12 1997
 [#6X4:1]-[#16X4,#16X3+0:2]-[#6X4:3]~[#6X4:4]  1  0.800    0.0     3  Frosst CT-SO-CT-CT  RHF/6-41G(d,p) Dec 12 1997
 [*:1]~[#16X4,#16X3+0:2]-[#6X3:3]~[*:4]  1  1.750  180.0     2  Frosst X_-SO-CA-X  generic guess
@@ -532,6 +538,12 @@ DIHE
 [#8X2:1]-[#15:2]-[#8X2:3]-[#6X4:4]  1  0.250    0.0  -3.0  parm99 OS-P_-OS-CT  JCC,7,(1986),230
 [#8X2:1]-[#15:2]-[#8X2:3]-[#6X4:4]  1  1.200    0.0   2.0  parm99 OS-P_-OS-CT  gg&gt ene.631g*/mp2
 #
+# N-P bonds
+[*:1]~[#7X3:2]-[#15:3]~[*:4]    1   2.5       180.000           2.000       GAFF2 X-n3-p*-X estimated by CCB 4/4/2017
+[*:1]~[#7X4:2]-[#15:3]~[*:4]    1    0.1         0.000           3.000      GAFF2 X-n4-p*-X estimated by CCB 4/4/2017
+[*:1]-[#7:2]-[#15:3]=[*:4]    1    3.000       180.0            -2.         TorType=1 generic version of GAFF2 c3-n3-p5-o estimated by CCB 4/4/2017
+[*:1]-[#7:2]-[#15:3]=[*:4]    1    2.300         0.0             3.         TorType=1 generic version of GAFF2 c3-n3-p5-o estimated by CCB 4/4/2017 
+[#6X3:1]-[#7:2]-[#15:3]=[*:4]   1    2.300         0.0             1.         TorType=1 generic version of GAFF2 Csp2-n_-p5-o estimated by CCB 4/4/2017  
 # torsions involving linear bonds (acetylene, nitrile, azide) cannot have a real torsion angle
 [*:1]-[*:2]#[*:3]-[*:4]     1  0.000    0.0     1  Frosst generic
 [*:1]~[*:2]-[*:3]#[*:4]     1  0.000    0.0     1  Frosst generic
