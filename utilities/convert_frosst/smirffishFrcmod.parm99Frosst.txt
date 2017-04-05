@@ -2,10 +2,10 @@
 # Date: Tue Aug 25 2016
 # Author: C. I. Bayly, OpenEye Scientific Software
 #
-# Date: only last line in this section is used so 
+# Date: only last line in this section is used, all others in list will be ignored. 
 DATE
-# Updated: Many times during Fall 2016 - Winter 2017, most recently Fri. March 3, 2017
-Date: March 16, 2017
+# Updated: Many times during Fall 2016 - Winter 2017, small change with eithers Fri. March 3, 2017
+# Significant updates added in early spring 2017 
 Date: April 4, 2017
 # Author: please make sure all authors are on one line, only last line will be used 
 AUTHOR
@@ -209,8 +209,8 @@ ANGL
 [*:1]-[#16X4,#16X3+0:2]-[*:3]    60.  109.5   parm99 generic hypervalent sulfur
 [*:1]~[#16X3$(*~[#8X1,#7X2]):2]~[*:3]    70.  109.5   Frosst generic sulfinyl guess
 # divalent sulfur, both aliphatic and endocyclic in het5 (a la thiophene)
-[*:1]~[#16X2,#16X3+1:2]~[*:3]  60.  98.     parm99 generic divalent sulfur
-[*:1]=[#16X2:2]=[*:3]    70.  180.    Frosst generic divalent hypervalent e.g. isothiocyanate
+[*:1]~[#16X2,#16X3+1:2]~[*:3]  60.  98.     parm99 generic divalent sulfur (CCB made more generic with ~ bonds 4/4/2017)
+[*:1]=[#16X2:2]=[*:3]    70.  180.    Frosst generic divalent hypervalent e.g. isothiocyanate (CCB changed order, moved down one, 4/4/2017)
 [#6X3:1]-[#16X2:2]-[#6X3:3]    60.  95.     Frosst generic
 [#6X3:1]-[#16X2:2]-[#6X4:3]    60.  100.    Frosst generic
 [#6X3:1]-[#16X2:2]-[#1:3]      43.  96.     Frosst CA-SH-HS by analogy with parm94 CT-SH-HS
