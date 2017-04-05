@@ -261,12 +261,12 @@ def test_read_ffxml_gbsa():
 
 def check_system_creation_from_molecule(forcefield, mol, chargeMethod=None, verbose=False):
     """
-    Generate a System from the given OEMol and SMIRFF forcefield and check that its energy is finite.
+    Generate a System from the given OEMol and SMIRNOFF forcefield and check that its energy is finite.
 
     Parameters
     ----------
     forcefield : smarty.ForceField
-        SMIRFF forcefield
+        SMIRNOFF forcefield
     mol : oechem.OEMol
         Molecule to test (need not have coordinates)
     chargeMethod : str, optional, default=None
@@ -283,12 +283,12 @@ def check_system_creation_from_molecule(forcefield, mol, chargeMethod=None, verb
 
 def check_system_creation_from_topology(forcefield, topology, mols, positions, chargeMethod=None, verbose=False):
     """
-    Generate a System from the given topology, OEMols matching the contents of the topology, and SMIRFF forcefield and check that its energy is finite.
+    Generate a System from the given topology, OEMols matching the contents of the topology, and SMIRNOFF forcefield and check that its energy is finite.
 
     Parameters
     ----------
     forcefield : smarty.ForceField
-        SMIRFF forcefield
+        SMIRNOFF forcefield
     topology : simtk.openmm.app.Topology
         Topology to construct system from
     mols : list of oechem.OEMol
@@ -375,10 +375,10 @@ def test_create_system_boxes_features(verbose=False):
         for f in check_boxes(forcefield, description="to test Parm@frosst parameters with charge method %s" % str(chargeMethod), chargeMethod=chargeMethod, verbose=verbose):
             yield f
 
-def test_create_system_boxes_smirff99Frosst(verbose=False):
+def test_create_system_boxes_smirnoff99Frosst(verbose=False):
     """Test creation of a System object from some boxes of mixed solvents to test parm@frosst forcefield.
     """
-    forcefield = ForceField(get_data_filename('forcefield/smirff99Frosst.ffxml'))
+    forcefield = ForceField(get_data_filename('forcefield/smirnoff99Frosst.ffxml'))
     for f in check_boxes(forcefield, description="to test Parm@frosst parameters", verbose=verbose):
         yield f
 
@@ -534,7 +534,7 @@ def test_improper(verbose = False):
     # Check that torsional energies the same to 1 in 10^6
     rel_error = np.abs(( g0['torsion']-g1['torsion'])/ g0['torsion'])
     if rel_error > 2e-5: #Note that this will not be tiny because we use six-fold impropers and they use a single improper
-        raise Exception("Improper torsion energy for benzene differs too much (relative error %.4g) between AMBER and SMIRFF." % rel_error )
+        raise Exception("Improper torsion energy for benzene differs too much (relative error %.4g) between AMBER and SMIRNOFF." % rel_error )
 
 
 def test_MDL_aromaticity(verbose=False):
@@ -735,7 +735,7 @@ def test_component_combination():
             raise Exception('Error: Residue %s in cyclohexane-ethanol test system has a charge of zero, which is incorrect.' % resnr)
 
 def test_merge_system():
-    """Test merging of a system created from AMBER and another created from SMIRFF."""
+    """Test merging of a system created from AMBER and another created from SMIRNOFF."""
 
     #Create System from AMBER
     prefix = os.path.join('systems', 'amber', 'cyclohexane_ethanol_0.4_0.6')
