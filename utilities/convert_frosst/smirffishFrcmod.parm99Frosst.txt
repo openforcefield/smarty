@@ -4,7 +4,7 @@
 #
 # Date: only last line in this section is used, all others in list will be ignored. 
 DATE
-# Updated: Many times during Fall 2016 - Winter 2017, small change with eithers Fri. March 3, 2017
+# Updated: Many times during Fall 2016 - Winter 2017, small change with ethers Fri. March 3, 2017
 # Significant updates added in early spring 2017 
 Date: April 4, 2017
 # Author: please make sure all authors are on one line, only last line will be used 
