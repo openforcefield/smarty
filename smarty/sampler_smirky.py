@@ -332,10 +332,10 @@ class FragmentSampler(object):
         else:
             return None
 
-        envList = list()
         if smirksList is None:
-            return [chemEnv(None, 0, self.replacements)]
+            return [chemEnv(label=0, replacements=self.replacements)]
 
+        envList = list()
         for smirks, typename in smirksList:
             envList.append(chemEnv(smirks, typename, self.replacements))
 
