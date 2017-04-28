@@ -34,9 +34,9 @@ from openeye.oequacpac import *
 import networkx as nx
 import time
 
-from  smarty.environment import *
-from smarty.forcefield import *
-from smarty.utils import *
+from openforcefield.typing.chemistry.environment import *
+from openforcefield.typing.engines.smirnoff import forcefield
+from openforcefield.utils.utils import *
 
 import numpy
 from numpy import random
@@ -278,8 +278,7 @@ class FragmentSampler(object):
         if self.SMIRFF is not None:
             self.log.write("Creating labeler from %s...\n" % self.SMIRFF)
             # get labeler for specified SMIRFF
-            #self.labeler = ForceField(get_data_filename(self.SMIRFF))
-            self.labeler = ForceField(self.SMIRFF)
+            self.labeler = forcefield.ForceField(self.SMIRFF)
             labels = self.labeler.labelMolecules(self.molecules, verbose=False)
 
             # save the type we are considering
@@ -404,7 +403,7 @@ class FragmentSampler(object):
         else:
             # ValenceDict allow for symmetric fragments
             # for example bond (1,2) is identical to (2,1)
-            matches = ValenceDict()
+            matches = forcefield.ValenceDict()
 
         # then require non-unique matches
         unique = False

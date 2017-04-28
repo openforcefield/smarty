@@ -2,6 +2,7 @@ from functools import partial
 import smarty
 from smarty import AtomTyper, AtomTypeSampler, score_utils
 from smarty.utils import get_data_filename
+from openforcefield.utils import read_molecules
 import unittest
 from unittest import TestCase
 
@@ -19,11 +20,11 @@ class TestAtomTypeSampler(TestCase):
         self.replacements = get_data_filename('atomtypes/replacements.smarts')
 
         # import molecules
-        self.mols_zinc = smarty.utils.read_molecules(get_data_filename('molecules/zinc-subset-tripos.mol2.gz'), verbose=False)
-        self.mols_zinc_ref = smarty.utils.read_molecules(get_data_filename('molecules/zinc-subset-parm@frosst.mol2.gz'), verbose=False)
+        self.mols_zinc = read_molecules(get_data_filename('molecules/zinc-subset-tripos.mol2.gz'), verbose=False)
+        self.mols_zinc_ref = read_molecules(get_data_filename('molecules/zinc-subset-parm@frosst.mol2.gz'), verbose=False)
 
-        self.mols_alkethoh = smarty.utils.read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_tripos.mol2'), verbose=False)
-        self.mols_alkethoh_ref = smarty.utils.read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_ff.mol2'), verbose=False)
+        self.mols_alkethoh = read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_tripos.mol2'), verbose=False)
+        self.mols_alkethoh_ref = read_molecules(get_data_filename('molecules/AlkEthOH_test_filt1_ff.mol2'), verbose=False)
 
 
     def test_atomtyper(self):

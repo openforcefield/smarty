@@ -9,6 +9,7 @@ import time
 
 from optparse import OptionParser # For parsing of command line arguments
 import smarty
+from openforcefield.utils import utils
 
 import os
 import math
@@ -131,16 +132,16 @@ def main():
 
     verbose = option.verbose == 'True'
     # Load and type all molecules in the specified dataset.
-    molecules = smarty.utils.read_molecules(option.molecules_filename, verbose=verbose)
+    molecules = utils.read_molecules(option.molecules_filename, verbose=verbose)
 
     # Parse input odds files
-    atom_OR_bases = smarty.utils.parse_odds_file(option.atom_OR_bases, verbose)
-    atom_OR_decorators = smarty.utils.parse_odds_file(option.atom_OR_decorators, verbose)
-    atom_AND_decorators = smarty.utils.parse_odds_file(option.atom_AND_decorators, verbose)
-    bond_OR_bases = smarty.utils.parse_odds_file(option.bond_OR_bases, verbose)
-    bond_AND_decorators = smarty.utils.parse_odds_file(option.bond_AND_decorators, verbose)
-    atom_odds = smarty.utils.parse_odds_file(option.atom_odds, verbose)
-    bond_odds = smarty.utils.parse_odds_file(option.bond_odds, verbose)
+    atom_OR_bases = smarty.parse_odds_file(option.atom_OR_bases, verbose)
+    atom_OR_decorators = smarty.parse_odds_file(option.atom_OR_decorators, verbose)
+    atom_AND_decorators = smarty.parse_odds_file(option.atom_AND_decorators, verbose)
+    bond_OR_bases = smarty.parse_odds_file(option.bond_OR_bases, verbose)
+    bond_AND_decorators = smarty.parse_odds_file(option.bond_AND_decorators, verbose)
+    atom_odds = smarty.parse_odds_file(option.atom_odds, verbose)
+    bond_odds = smarty.parse_odds_file(option.bond_odds, verbose)
 
     # get initial types if provided, otherwise none
     if option.initialtypes_filename is None:

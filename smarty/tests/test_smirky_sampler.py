@@ -1,6 +1,7 @@
 import unittest
 import smarty
-from smarty.environment import *
+from openforcefield.typing.chemistry.environment import *
+from openforcefield.utils.utils import read_molecules
 from smarty.sampler_smirky import *
 from smarty import utils
 from smarty import score_utils
@@ -24,7 +25,7 @@ class TestSmirkySampler(unittest.TestCase):
         self.bond_AND_decors = utils.parse_odds_file("odds_files/bond_AND_decorators.smarts", False)
         self.atom_odds = utils.parse_odds_file("odds_files/atom_index_odds.smarts", False)
         self.bond_odds = utils.parse_odds_file("odds_files/bond_index_odds.smarts", False)
-        self.molecules = utils.read_molecules("test_filt1_tripos.mol2", False)
+        self.molecules = read_molecules("test_filt1_tripos.mol2", False)
         self.SMIRFF = "forcefield/Frosst_AlkEtOH.ffxml"
         self.outputFile = 'test_smirky'
         replacement_file = utils.get_data_filename("odds_files/substitutions.smarts")
