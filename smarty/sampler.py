@@ -146,7 +146,7 @@ class AtomTypeSampler(object):
             if smarts not in initial_smarts:
                 missing_basetypes.append( (smarts, typename) )
                 if self.verbose: print("Added base (generic) type `%s`, name %s, to initial types." % (smarts, typename))
-        
+
         self.atomtypes = missing_basetypes + self.atomtypes
 
         # Type all molecules with current typelist to ensure that starting types are sufficient.
@@ -213,7 +213,7 @@ class AtomTypeSampler(object):
 
     def smarts_matches(self, smarts):
         """
-        This method returns true if the provided SMARTS pattern is in 
+        This method returns true if the provided SMARTS pattern is in
         at least one molecule
         Parameters
         ----------

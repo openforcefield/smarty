@@ -1,6 +1,7 @@
 import unittest
 import smarty
-from smarty.environment import *
+from openforcefield.typing.chemistry.environment import *
+from openforcefield.utils.utils import read_molecules
 from smarty.sampler_smirky import *
 from smarty import utils
 from smarty import score_utils
@@ -24,7 +25,7 @@ class TestSmirkySampler(unittest.TestCase):
         self.bond_AND_decors = utils.parse_odds_file("odds_files/bond_AND_decorators.smarts", False)
         self.atom_odds = utils.parse_odds_file("odds_files/atom_index_odds.smarts", False)
         self.bond_odds = utils.parse_odds_file("odds_files/bond_index_odds.smarts", False)
-        self.molecules = utils.read_molecules("test_filt1_tripos.mol2", False)
+        self.molecules = read_molecules("test_filt1_tripos.mol2", False)
         self.SMIRFF = "forcefield/Frosst_AlkEtOH.ffxml"
         self.outputFile = 'test_smirky'
         replacement_file = utils.get_data_filename("odds_files/substitutions.smarts")
@@ -45,11 +46,12 @@ class TestSmirkySampler(unittest.TestCase):
         for typetag, initialtypes in self.correctDict.items():
             sampler = FragmentSampler(self.molecules, typetag,
                     self.atom_OR_bases, self.atom_OR_decors, self.atom_AND_decors,
-                    self.bond_OR_bases, self.bond_AND_decors, self.atom_odds,
-                    self.bond_odds, self.replacements, initialtypes,
-                    self.SMIRFF, 0.0, self.outputFile)
+                    self.bond_OR_bases, self.bond_AND_decors,
+                    AtomIndexOdds = self.atom_odds, BondIndexOdds = self.bond_odds,
+                    replacements = self.replacements, initialtypes = initialtypes,
+                    SMIRFF = self.SMIRFF, temperature = 0.0, outputFile =self.outputFile)
 
-            fracfound = sampler.run(2)
+            fracfound = sampler.run(1)
             self.assertAlmostEqual(fracfound, 1.0, msg = "Not finding 100%% of AlkEthOH when starting from correct %s SMIRKS." % typetag)
 
     def test_random_sampler(self):
@@ -60,8 +62,10 @@ class TestSmirkySampler(unittest.TestCase):
         typetag = 'Torsion'
         sampler = FragmentSampler(self.molecules, typetag, self.atom_OR_bases,
                 self.atom_OR_decors, self.atom_AND_decors, self.bond_OR_bases,
-                self.bond_AND_decors, self.atom_odds, self.bond_odds,
-                self.replacements, None, self.SMIRFF, 0.0, self.outputFile)
+                self.bond_AND_decors,
+                AtomIndexOdds = self.atom_odds, BondIndexOdds = self.bond_odds,
+                replacements = self.replacements, initialtypes = None,
+                SMIRFF = self.SMIRFF, temperature = 0.0, outputFile = self.outputFile)
         fracfound = sampler.run(10)
         # load_trajectory converts csv file to dictionary
         timeseries = score_utils.load_trajectory('%s.csv' % self.outputFile)
@@ -78,8 +82,10 @@ class TestSmirkySampler(unittest.TestCase):
         typetag = 'Angle'
         sampler = FragmentSampler(self.molecules, typetag, self.atom_OR_bases,
                 self.atom_OR_decors, self.atom_AND_decors, self.bond_OR_bases,
-                self.bond_AND_decors, self.atom_odds, self.bond_odds,
-                self.replacements, None, self.SMIRFF, 0.0, self.outputFile)
+                self.bond_AND_decors,
+                AtomIndexOdds = self.atom_odds, BondIndexOdds = self.bond_odds,
+                replacements = self.replacements, initialtypes = None,
+                SMIRFF = self.SMIRFF, temperature = 0.0, outputFile = self.outputFile)
 
         typetags = [ ('VdW', 'NonbondedGenerator'),
                 ('Bond', 'HarmonicBondGenerator'),
@@ -119,7 +125,9 @@ class TestSmirkySampler(unittest.TestCase):
         typetag = 'Bond'
         sampler = FragmentSampler(self.molecules, typetag, self.atom_OR_bases,
                 self.atom_OR_decors, self.atom_AND_decors, self.bond_OR_bases,
-                self.bond_AND_decors, self.atom_odds, self.bond_odds,
-                self.replacements, None, None, 0.0, self.outputFile)
+                self.bond_AND_decors,
+                AtomIndexOdds = self.atom_odds, BondIndexOdds = self.bond_odds,
+                replacements = self.replacements, initialtypes = None,
+                SMIRFF = None, temperature = 0.0, outputFile = self.outputFile)
         fracfound = sampler.run(10)
 

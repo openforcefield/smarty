@@ -16,6 +16,7 @@ import numpy
 import random
 
 import smarty
+from openforcefield.utils import utils
 
 def main():
     # Create command-line argument options.
@@ -99,13 +100,12 @@ def main():
         parser.error("Option not valid for decorator behavior.")
 
     # Load and type all molecules in the specified dataset.
-    import smarty.utils
-    molecules = smarty.utils.read_molecules(options.molecules_filename, verbose=True)
+    molecules = utils.read_molecules(options.molecules_filename, verbose=True)
 
     # Read reference typed molecules, if specified.
     reference_typed_molecules = None
     if options.reference_molecules_filename is not None:
-        reference_typed_molecules = smarty.utils.read_molecules(options.reference_molecules_filename, verbose=True)
+        reference_typed_molecules = utils.read_molecules(options.reference_molecules_filename, verbose=True)
 
     # Construct atom type sampler.
     if options.element == 0:

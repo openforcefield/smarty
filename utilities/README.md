@@ -1,3 +1,1 @@
-# Examples for smarty
-
-This material has been moved to github.com/open-forcefield-group/openforcefield/utilities 
+# All scripts moved to openforcefield repo
