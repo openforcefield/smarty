@@ -215,9 +215,7 @@ class FragmentSampler(object):
         smiles = set()
 
         # loop through input molecules, remove repeats
-        for tmp_mol in molecules:
-            mol = OEMol(tmp_mol)
-            OEAddExplicitHydrogens(mol)
+        for mol in molecules:
             smile = OECreateIsoSmiString(mol)
             if not smile in smiles:
                 self.molecules.append(OEMol(mol))

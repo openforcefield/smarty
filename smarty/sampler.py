@@ -92,7 +92,23 @@ class AtomTypeSampler(object):
         self.replacements = AtomTyper.read_typelist(replacements_filename)
 
         # Store a deep copy of the molecules since they will be annotated
-        self.molecules = copy.deepcopy(molecules)
+        # loop through input molecules to remove repeats
+        self.molecules = list()
+        if reference_typed_molecules is not None:
+            self.reference_typed_molecules = list()
+        else: self.reference_typed_molecules = None
+
+        smiles = set()
+        for idx, mol in enumerate(molecules):
+            smile = OECreateIsoSmiString(mol)
+            if not smile in smiles:
+                self.molecules.append(OEMol(mol))
+                smiles.add(smile)
+                if reference_typed_molecules is not None:
+                    ref_mol = OEMol(reference_typed_molecules[idx])
+                    ref_smile = OECreateIsoSmiString(ref_mol)
+                    # TODO: add ref_smile == smile check?
+                    self.reference_typed_molecules.append(OEMol(ref_mol))
 
         # Save bond list to use throughout
         bondset = [("-","singly"), ("=", "doubly"), ("#","triply"), (":", "aromatic")]
@@ -116,7 +132,7 @@ class AtomTypeSampler(object):
 
         # Calculate which bonds in set are used
         bond_typelist = [("[*]%s[*]" %bond, name) for (bond, name) in bondset]
-        tmpmolecules = copy.deepcopy(molecules)
+        tmpmolecules = copy.deepcopy(self.molecules)
         self.type_molecules(bond_typelist, tmpmolecules, 0)
         [bond_typecounts, molecule_bond_typecounts] = self.compute_type_statistics( bondset, tmpmolecules, 0)
         if self.verbose:
@@ -194,9 +210,9 @@ class AtomTypeSampler(object):
         self.reference_atomtypes = set()
         self.current_atom_matches = None
         if reference_typed_molecules is not None:
-            self.reference_typed_molecules = copy.deepcopy(reference_typed_molecules)
+            self.reference_typed_molecules = copy.deepcopy(self.reference_typed_molecules)
             # Extract list of reference atom types
-            for molecule in reference_typed_molecules:
+            for molecule in self.reference_typed_molecules:
                 for atom in self._GetAtoms(molecule, self.element):
                     atomtype = atom.GetType()
                     self.reference_atomtypes.add(atomtype)
@@ -205,7 +221,7 @@ class AtomTypeSampler(object):
             [self.atom_type_matches, self.total_atom_type_matches] = self.best_match_reference_types(self.atomtypes, self.molecules)
             # Count atom types.
             self.reference_atomtypes_atomcount = { atomtype : 0 for atomtype in self.reference_atomtypes }
-            for molecule in reference_typed_molecules:
+            for molecule in self.reference_typed_molecules:
                 for atom in self._GetAtoms(molecule, self.element):
                     atomtype = atom.GetType()
                     self.reference_atomtypes_atomcount[atomtype] += 1
