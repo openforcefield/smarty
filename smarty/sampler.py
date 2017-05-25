@@ -206,11 +206,9 @@ class AtomTypeSampler(object):
                 self.total_atoms += 1.0
 
         # Store reference molecules
-        self.reference_typed_molecules = None
         self.reference_atomtypes = set()
         self.current_atom_matches = None
-        if reference_typed_molecules is not None:
-            self.reference_typed_molecules = copy.deepcopy(self.reference_typed_molecules)
+        if self.reference_typed_molecules is not None:
             # Extract list of reference atom types
             for molecule in self.reference_typed_molecules:
                 for atom in self._GetAtoms(molecule, self.element):
