@@ -211,11 +211,17 @@ class FragmentSampler(object):
         self.forcetype, self.edges, self.sym_odds = self.get_type_info(self.typetag)
 
         # get molecules and add explicit hydrogens
-        self.molecules = copy.deepcopy(molecules)
-        for mol in self.molecules:
-            OEAddExplicitHydrogens(mol)
+        self.molecules = list()
+        smiles = set()
 
-        # if no initialtypes specified make empty bond
+        # loop through input molecules, remove repeats
+        for mol in molecules:
+            smile = OECreateIsoSmiString(mol)
+            if not smile in smiles:
+                self.molecules.append(OEMol(mol))
+                smiles.add(smile)
+
+        # if no initialtypes specified start with empty type
         self.emptyEnv = self._makeEnvironments(self.typetag, None)[0]
 
         # Compute total types being sampled

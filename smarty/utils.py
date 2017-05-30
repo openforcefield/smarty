@@ -73,14 +73,9 @@ def parse_odds_file(filename, verbose = False):
     --------
     choices: 2-tuple of the form ( [decorators], [odds] )
     """
-    if verbose:
-        if isinstance(filename, file):
-            print("Attempting to parse file '%s'" % filename.name)
-        else:
-            print("Attempting to parse file '%s'" % filename)
-
     # if no file return None
     if filename is None:
+        if verbose: print("No filename provided, returning None")
         return None
 
     # if input is a file object
