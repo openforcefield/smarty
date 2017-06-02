@@ -810,6 +810,12 @@ class FragmentSampler(object):
         a given component (just atoms in this case)
         returns the probability of making this change
         """
+        # Remove '' from choices, if we're changing
+        # OR decorator we don't want that to count
+        blank_idx = decorators[0].find('')
+        if blank_idx != -1:
+            decorators[1][blank_idx] = 0
+        # pick new decorator with the probability
         new_decor, decor_prob = _PickFromWeightedChoices(decorators)
         currentORs = component.getORtypes()
         if len(currentORs) > 0:
