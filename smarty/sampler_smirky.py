@@ -1007,19 +1007,27 @@ class FragmentSampler(object):
             self.parents = proposed_parents
             return True
 
-        # Compute effective temperature
-        if self.temperature == 0.0:
-            effective_temperature = 1
-        else:
-            effective_temperature = (self.total_types * self.temperature)
-
-        # Compute likelihood for accept/reject
+        # Determine number of matches
+        accept = False
+        # Compute change in score
         typelist = [ [e.asSMIRKS(), e.label] for e in proposed_envList]
-
         (proposed_type_matches, proposed_total_type_matches) = self.best_match_reference_types(typelist)
-        log_P_accept = (proposed_total_type_matches - self.total_type_matches) / effective_temperature
-        self.log.write('Proposal score: %d >> %d : log_P_accept = %.5e\n' % (self.total_type_matches, proposed_total_type_matches, log_P_accept))
-        if (log_P_accept > 0.0) or (numpy.random.uniform() < numpy.exp(log_P_accept)):
+        score_dif = (proposed_total_type_matches - self.total_type_matches)
+
+        # If temeperature is 0.0 only accept improved scores
+        if self.temperature == 0.0:
+            self.log.write('Proposal score: %d >> %d \n' % (self.total_type_matches, proposed_total_type_matches))
+            accept = score_dif > 0.0
+
+        # Finite temperature compute likelihood function
+        else:
+            # Compute effective temperature and likelihood
+            effective_temperature = (self.total_types * self.temperature)
+            log_P_accept = score_dif / effective_temperature
+            self.log.write('Proposal score: %d >> %d : log_P_accept = %.5e\n' % (self.total_type_matches, proposed_total_type_matches, log_P_accept))
+            accept = (log_P_accept > 0.0) or (numpy.random.uniform() < numpy.exp(log_P_accept))
+
+        if accept:
             # Change accepted
             self.envList = proposed_envList
             self.parents = proposed_parents
