@@ -17,7 +17,7 @@ This is an example of how to use smirky, a command line tool for sampling chemic
 ### Command line call
 
 ```
-smirky --molecules AlkEtOH_test_filt1_ff.mol2 \
+smirky --molecules AlkEthOH_test_filt1_ff.mol2 \
     --typetag Torsion \
     --atomORbases atom_OR_bases.smarts \
     --atomORdecors atom_OR_decorators.smarts \
@@ -28,7 +28,7 @@ smirky --molecules AlkEtOH_test_filt1_ff.mol2 \
     --bondOddsFile bond_odds_forTorsions.smarts \
     --initialtypes initial_Torsions.smarts \
     --substitutions substitutions.smarts \
-    --smirff forcefield/Frosst_AlkEtOH.ffxml \
+    --smirff forcefield/Frosst_AlkEthOH.ffxml \
     --iteratorsion 1000 \
     --temperature 0.001 \ 
     --verbose True \
@@ -73,7 +73,7 @@ Use the forcefield tools to type all molecules with SMIRNOFF reference.
 Compare reference types to initial parameter types
 
 ```
-Creating labeler from forcefield/Frosst_AlkEtOH.ffxml...
+Creating labeler from forcefield/Frosst_AlkEthOH.ffxml...
 Creating graph matching current types with reference types...
 Graph creation took 0.304 s
 Computing maximum weight match...
