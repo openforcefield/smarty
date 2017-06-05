@@ -804,16 +804,21 @@ class FragmentSampler(object):
 
         return move_prob * change_prob * sym_change_odds
 
-    def change_ORdecorator(self, component, decorators):
+    def change_ORdecorator(self, component, input_decorators):
         """
         Makes changes to the decorators associated with 1 ORbase for
         a given component (just atoms in this case)
         returns the probability of making this change
         """
+        decorators = copy.deepcopy(input_decorators)
         # Remove '' from choices, if we're changing
         # OR decorator we don't want that to count
-        blank_idx = decorators[0].find('')
-        if blank_idx != -1:
+        if decorators[0].count('') > 0:
+            blank_idx = decorators[0].index('')
+            if decorators[1] is None:
+                decs0 = decorators[0]
+                decs1 = numpy.ones(len(decs0))
+                decorators = (decs0, decs1)
             decorators[1][blank_idx] = 0
         # pick new decorator with the probability
         new_decor, decor_prob = _PickFromWeightedChoices(decorators)
