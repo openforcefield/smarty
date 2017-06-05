@@ -863,7 +863,7 @@ class FragmentSampler(object):
         Makes changes to the Bond object
         returns probability of making change
         """
-        #TODO: if symmetry in change_atom works for AlkEtOH, figure out how to handle bonds
+        #TODO: if symmetry in change_atom works for AlkEthOH, figure out how to handle bonds
         # Can only make changes to the bond OR or AND types
         changeOR = random.choice([True, False], p = [0.7, 0.3])
         if changeOR:
