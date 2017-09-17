@@ -115,6 +115,15 @@ def _PickFromWeightedChoices(choices):
     pickIndex = random.choice(indices, p=choices[1])
     return choices[0][pickIndex], choices[1][pickIndex]
 
+def _RemoveBlankOdds(choices):
+    if '' is in choices[0]:
+        blank_idx = choices[0].index('')
+        if choices[1] is None:
+            choice0 = choices[0]
+            choice1 = numpy.ones(len(choice0))
+            choices = (choice0, choice1)
+        choices[1][blankd_idx] = 0
+
 #=============================================================================================
 # ATOMTYPE SAMPLER
 #=============================================================================================
@@ -682,7 +691,8 @@ class FragmentSampler(object):
         Returns probability of creating this atom
         """
         #choose ORbase
-        base, prob = _PickFromWeightedChoices( self.AtomORbases )
+        atom_or_options = _RemoveBlankOdds(copy.deepcopy(self.AtomORbases))
+        base, prob = _PickFromWeightedChoices( atom_or_options )
         new_atom = env.addAtom(atom, newORtypes = [(base, [])])
         return prob
 
@@ -757,23 +767,26 @@ class FragmentSampler(object):
         # assign options and probabilities:
         # start with OR base change opt = 3
         opts = [3]
-        probs = [3]
+        probs = [5]
         # In order to have add_atom as an allowed option,
-        # The current atom must have at least one decorator and be not Beta
+        # The current atom must have at least one decorator and are not Beta
         decorated = (len(atom.getORtypes()) > 0 or len(atom.getANDtypes()) > 0)
         if (not env.isBeta(atom)) and decorated:
             opts.append(1)
-            probs.append(5)
+            probs.append(1)
+
         # check if removeable
         if self.isremoveable(env, atom):
             opts.append(0)
             probs.append(1)
-        # check for optional AND decorators
+
+        # AND decorators are optional, if they were provided check the only 1 isn't ''
         if not (len(self.AtomANDdecorators[0]) <=1 and self.AtomANDdecorators[0][0] ==''):
             opts.append(2)
-            probs.append(1)
+            probs.append(5)
         # check for existing OR types, for OR decorator changes
         if len(atom.getORtypes()) > 0:
+            # Check that or decorators were provided
             if not (len(self.AtomORdecorators[0]) <= 1 and self.AtomORdecorators[0][0] == ''):
                 opts.append(4)
                 probs.append(5)
@@ -810,16 +823,9 @@ class FragmentSampler(object):
         a given component (just atoms in this case)
         returns the probability of making this change
         """
-        decorators = copy.deepcopy(input_decorators)
         # Remove '' from choices, if we're changing
         # OR decorator we don't want that to count
-        if decorators[0].count('') > 0:
-            blank_idx = decorators[0].index('')
-            if decorators[1] is None:
-                decs0 = decorators[0]
-                decs1 = numpy.ones(len(decs0))
-                decorators = (decs0, decs1)
-            decorators[1][blank_idx] = 0
+        decorators = _RemoveBlankOdds(copy.deepcopy(input_decorators))
         # pick new decorator with the probability
         new_decor, decor_prob = _PickFromWeightedChoices(decorators)
         currentORs = component.getORtypes()
