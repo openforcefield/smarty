@@ -116,13 +116,14 @@ def _PickFromWeightedChoices(choices):
     return choices[0][pickIndex], choices[1][pickIndex]
 
 def _RemoveBlankOdds(choices):
-    if '' is in choices[0]:
+    if '' in choices[0]:
         blank_idx = choices[0].index('')
         if choices[1] is None:
             choice0 = choices[0]
             choice1 = numpy.ones(len(choice0))
             choices = (choice0, choice1)
-        choices[1][blankd_idx] = 0
+        choices[1][blank_idx] = 0
+    return choices
 
 #=============================================================================================
 # ATOMTYPE SAMPLER
