@@ -115,6 +115,16 @@ def _PickFromWeightedChoices(choices):
     pickIndex = random.choice(indices, p=choices[1])
     return choices[0][pickIndex], choices[1][pickIndex]
 
+def _RemoveBlankOdds(choices):
+    if '' in choices[0]:
+        blank_idx = choices[0].index('')
+        if choices[1] is None:
+            choice0 = choices[0]
+            choice1 = numpy.ones(len(choice0))
+            choices = (choice0, choice1)
+        choices[1][blank_idx] = 0
+    return choices
+
 #=============================================================================================
 # ATOMTYPE SAMPLER
 #=============================================================================================
@@ -682,7 +692,8 @@ class FragmentSampler(object):
         Returns probability of creating this atom
         """
         #choose ORbase
-        base, prob = _PickFromWeightedChoices( self.AtomORbases )
+        atom_or_options = _RemoveBlankOdds(copy.deepcopy(self.AtomORbases))
+        base, prob = _PickFromWeightedChoices( atom_or_options )
         new_atom = env.addAtom(atom, newORtypes = [(base, [])])
         return prob
 
@@ -757,23 +768,26 @@ class FragmentSampler(object):
         # assign options and probabilities:
         # start with OR base change opt = 3
         opts = [3]
-        probs = [3]
+        probs = [5]
         # In order to have add_atom as an allowed option,
-        # The current atom must have at least one decorator and be not Beta
+        # The current atom must have at least one decorator and are not Beta
         decorated = (len(atom.getORtypes()) > 0 or len(atom.getANDtypes()) > 0)
         if (not env.isBeta(atom)) and decorated:
             opts.append(1)
-            probs.append(5)
+            probs.append(1)
+
         # check if removeable
         if self.isremoveable(env, atom):
             opts.append(0)
             probs.append(1)
-        # check for optional AND decorators
+
+        # AND decorators are optional, if they were provided check the only 1 isn't ''
         if not (len(self.AtomANDdecorators[0]) <=1 and self.AtomANDdecorators[0][0] ==''):
             opts.append(2)
-            probs.append(1)
+            probs.append(5)
         # check for existing OR types, for OR decorator changes
         if len(atom.getORtypes()) > 0:
+            # Check that or decorators were provided
             if not (len(self.AtomORdecorators[0]) <= 1 and self.AtomORdecorators[0][0] == ''):
                 opts.append(4)
                 probs.append(5)
@@ -804,12 +818,16 @@ class FragmentSampler(object):
 
         return move_prob * change_prob * sym_change_odds
 
-    def change_ORdecorator(self, component, decorators):
+    def change_ORdecorator(self, component, input_decorators):
         """
         Makes changes to the decorators associated with 1 ORbase for
         a given component (just atoms in this case)
         returns the probability of making this change
         """
+        # Remove '' from choices, if we're changing
+        # OR decorator we don't want that to count
+        decorators = _RemoveBlankOdds(copy.deepcopy(input_decorators))
+        # pick new decorator with the probability
         new_decor, decor_prob = _PickFromWeightedChoices(decorators)
         currentORs = component.getORtypes()
         if len(currentORs) > 0:
@@ -857,7 +875,7 @@ class FragmentSampler(object):
         Makes changes to the Bond object
         returns probability of making change
         """
-        #TODO: if symmetry in change_atom works for AlkEtOH, figure out how to handle bonds
+        #TODO: if symmetry in change_atom works for AlkEthOH, figure out how to handle bonds
         # Can only make changes to the bond OR or AND types
         changeOR = random.choice([True, False], p = [0.7, 0.3])
         if changeOR:
@@ -1001,19 +1019,27 @@ class FragmentSampler(object):
             self.parents = proposed_parents
             return True
 
-        # Compute effective temperature
-        if self.temperature == 0.0:
-            effective_temperature = 1
-        else:
-            effective_temperature = (self.total_types * self.temperature)
-
-        # Compute likelihood for accept/reject
+        # Determine number of matches
+        accept = False
+        # Compute change in score
         typelist = [ [e.asSMIRKS(), e.label] for e in proposed_envList]
-
         (proposed_type_matches, proposed_total_type_matches) = self.best_match_reference_types(typelist)
-        log_P_accept = (proposed_total_type_matches - self.total_type_matches) / effective_temperature
-        self.log.write('Proposal score: %d >> %d : log_P_accept = %.5e\n' % (self.total_type_matches, proposed_total_type_matches, log_P_accept))
-        if (log_P_accept > 0.0) or (numpy.random.uniform() < numpy.exp(log_P_accept)):
+        score_dif = (proposed_total_type_matches - self.total_type_matches)
+
+        # If temeperature is 0.0 only accept improved scores
+        if self.temperature == 0.0:
+            self.log.write('Proposal score: %d >> %d \n' % (self.total_type_matches, proposed_total_type_matches))
+            accept = score_dif > 0.0
+
+        # Finite temperature compute likelihood function
+        else:
+            # Compute effective temperature and likelihood
+            effective_temperature = (self.total_types * self.temperature)
+            log_P_accept = score_dif / effective_temperature
+            self.log.write('Proposal score: %d >> %d : log_P_accept = %.5e\n' % (self.total_type_matches, proposed_total_type_matches, log_P_accept))
+            accept = (log_P_accept > 0.0) or (numpy.random.uniform() < numpy.exp(log_P_accept))
+
+        if accept:
             # Change accepted
             self.envList = proposed_envList
             self.parents = proposed_parents

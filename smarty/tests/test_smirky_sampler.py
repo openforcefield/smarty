@@ -26,7 +26,7 @@ class TestSmirkySampler(unittest.TestCase):
         self.atom_odds = utils.parse_odds_file("odds_files/atom_index_odds.smarts", False)
         self.bond_odds = utils.parse_odds_file("odds_files/bond_index_odds.smarts", False)
         self.molecules = read_molecules("test_filt1_tripos.mol2", False)
-        self.SMIRFF = "forcefield/Frosst_AlkEtOH.ffxml"
+        self.SMIRFF = "forcefield/Frosst_AlkEthOH.ffxml"
         self.outputFile = 'test_smirky'
         replacement_file = utils.get_data_filename("odds_files/substitutions.smarts")
         self.replacements = smarty.AtomTyper.read_typelist(replacement_file)
@@ -40,7 +40,7 @@ class TestSmirkySampler(unittest.TestCase):
     def test_correct_fragments(self):
         """
         Test score is 100% if correct VdW, Bond, Angles, or Torsions
-        from AlkEtOH are used as input to the FragmentSampler
+        from AlkEthOH are used as input to the FragmentSampler
         """
 
         for typetag, initialtypes in self.correctDict.items():

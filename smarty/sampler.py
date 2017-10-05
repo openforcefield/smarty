@@ -644,18 +644,22 @@ class AtomTypeSampler(object):
         if self.reference_typed_molecules is None:
             accept = True
         else:
-            # Compute effective temperature
-            if self.temperature == 0.0:
-                effective_temperature = 1
-            else:
-                effective_temperature = (self.total_atoms * self.temperature)
-
-            # Compute likelihood for accept/reject
+            # Find number of matches for current set
             (proposed_atom_type_matches, proposed_total_atom_type_matches) = self.best_match_reference_types(proposed_atomtypes, proposed_molecules)
-            log_P_accept = (proposed_total_atom_type_matches - self.total_atom_type_matches) / effective_temperature
-            print('Proposal score: %d >> %d : log_P_accept = %.5e' % (self.total_atom_type_matches, proposed_total_atom_type_matches, log_P_accept))
-            if (log_P_accept > 0.0) or (numpy.random.uniform() < numpy.exp(log_P_accept)):
-                accept = True
+            score_dif = (proposed_total_atom_type_matches - self.total_atom_type_matches)
+            # if temperature is zero only accept increased scores
+            if self.temperature == 0.0:
+                print('Proposal score: %d >> %d' % (self.total_atom_type_matches, proposed_total_atom_type_matches))
+                accept = score_dif > 0.0
+
+            # If finite temperature compute effective temperature and log_P_accept
+            else:
+                # Compute effective temperature
+                effective_temperature = (self.total_atoms * self.temperature)
+                # Compute likelihood for accept/reject
+                log_P_accept = score_dif / effective_temperature
+                print('Proposal score: %d >> %d : log_P_accept = %.5e' % (self.total_atom_type_matches, proposed_total_atom_type_matches, log_P_accept))
+                accept = (log_P_accept > 0.0) or (numpy.random.uniform() < numpy.exp(log_P_accept))
 
         # Accept or reject
         if accept:

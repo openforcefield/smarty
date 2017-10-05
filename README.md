@@ -92,7 +92,7 @@ One is using combinatorial decorators (default) and the other is using simple de
 
 The first option (combinatorial-decorator) attempt to create the new atomtype adding an Alpha or Beta substituent to a basetype or an atomtype.
 This decorators are different from the simple-decorator option and do not have atom types or bond information on it.
-The new decorators are listed in `AlkEtOH/atomtypes/new-decorators.smarts` and `parm@frosst/atomtypes/new-decorators.smarts`:
+The new decorators are listed in `AlkEthOH/atomtypes/new-decorators.smarts` and `parm@frosst/atomtypes/new-decorators.smarts`:
 
  ```
  % total connectivity
@@ -119,7 +119,7 @@ For example, we may find the atom type ```[#6]&H3``` which is `carbon total-h-co
 
 **Simple Decorators**
 The second option (simple-decorators) attempts to split off a new atom type from a parent atom type by combining (via an "and" operator, `&`) the parent atom type with a "decorator".
-The decorators are listed in `AlkEtOH/atomtypes/decorators.smarts` or `parm@frosst/atomtypes/decorators.smarts`:
+The decorators are listed in `AlkEthOH/atomtypes/decorators.smarts` or `parm@frosst/atomtypes/decorators.smarts`:
 ```
 % bond order
 $([*]=[*])     double-bonded
@@ -364,8 +364,8 @@ Options:
 The SMIRFF forcefield format is available in sample form under data/forcefield, and is handled by `forcefield.py`.
  An example comparing SMIRFF versus AMBER energies for the parm@frosst forcefield is provided under
 examples/SMIRFF_comparison, where two scripts can compare energies for a single molecule or for the entire AlkEthOH set.
-Note that two forcefields are currently available in this format, `Fross_AlkEtOH.ffxml`,
-the parm@frosst forcefield as it should have been for this set, and `Frosst_AlkEtOH_parmAtFrosst.ffxml`,
+Note that two forcefields are currently available in this format, `Fross_AlkEthOH.ffxml`,
+the parm@frosst forcefield as it should have been for this set, and `Frosst_AlkEthOH_parmAtFrosst.ffxml`,
 the forcefield as it was actually implemented (containing several bugs as noted in the file itself).
 
 It can also be of interest to know what SMIRFF parameters would be applied to particular molecules. Utility functionality for this is provided under `forcefield_labeler.py`, which has generally similar structure to `forcefield.py` but instead of providing OpenMM systems with parameters, it can be applied to specific molecules and returns information about what parameters would be applied.
