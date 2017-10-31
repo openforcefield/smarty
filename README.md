@@ -30,15 +30,11 @@ You must first install the OpenEye toolkit:
 pip install -i https://pypi.anaconda.org/OpenEye/simple OpenEye-toolkits
 ```
 
-Install other conda dependencies:
+You can then use conda to install smarty:
 ```
-conda install --yes numpy networkx
-conda install --yes -c omnia openmoltools
-conda install --yes -c omnia parmed
-conda install --yes -c omnia openforcefield
+conda config --add channels omnia
+conda install -c omnia smarty
 ```
-
-NOTE: We'll add a better way to install these dependencies via `conda` soon.
 
 ## Installation
 
