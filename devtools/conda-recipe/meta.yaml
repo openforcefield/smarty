@@ -18,7 +18,7 @@ requirements:
   run:
     - python
     - numpy
-    - networkx=1.11
+    - networkx ==1.11
     - lxml
     - openmoltools >=0.7.3
     - parmed
