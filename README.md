@@ -5,16 +5,16 @@
 
 This is a simple example of how Bayesian atom type sampling using reversible-jump Markov chain Monte Carlo (RJMCMC) [1] over SMARTS types might work.
 
-This also provides a prototype and validation of the SMIRFF SMIRKS-based force field format, along with classes to parameterize OpenMM systems given [SMIRFF `.ffxml` format files](https://github.com/open-forcefield-group/smarty/blob/master/The-SMIRFF-force-field-format.md) as provided here.
+All tools for implementation of the SMIRNOFF in OpenMM have been moved to the [openforcefield repository](https://github.com/open-forcefield-group/openforcefield)
 
 ## Manifest
 
 * `examples/` - some toy examples - look here to get started
-* `smarty/` - simple toolkit illustrating the use of RJMCMC to sample over SMARTS-specified atom types; also contains forcefield.py for handling SMIRFF forcefield format.
+* `smarty/` - simple toolkit illustrating the use of RJMCMC to sample over SMARTS-specified atom types and SMIRKS-specified bonded and non-bonded parameter types. 
 * `devtools/` - continuous integration and packaging scripts and utilities
 * `oe_license.txt.enc` - encrypted OpenEye license for continuous integration testing
 * `.travis.yml` - travis-ci continuous integration file
-* `utilities/` - some utility functionality relating to the project; initially, for conversion of parm@frosst modified frcmod files to SMIRFF XML.
+* `utilities/` - some utility functionality relating to the project.
 
 ## Prerequisites
 
@@ -30,14 +30,11 @@ You must first install the OpenEye toolkit:
 pip install -i https://pypi.anaconda.org/OpenEye/simple OpenEye-toolkits
 ```
 
-Install other conda dependencies:
+You can then use conda to install smarty:
 ```
-conda install --yes numpy networkx
-conda install --yes -c omnia openmoltools
-conda install --yes -c omnia parmed
+conda config --add channels omnia
+conda install -c omnia smarty
 ```
-
-NOTE: We'll add a better way to install these dependencies via `conda` soon.
 
 ## Installation
 
@@ -52,9 +49,6 @@ pip install . --upgrade
 
 ## Documentation
 
-## The SMIRFF force field format
-
-The SMIRFF force field format is documented [here](https://github.com/open-forcefield-group/smarty/blob/master/The-SMIRFF-force-field-format.md).
 
 ## SMARTY atom type sampler
 
@@ -243,23 +237,24 @@ Options:
                         decorators (default = combinatorial-decorators).
 ```
 
-=======
+---
+
 ##smirky
 
 Check out examples in `examples/smirky/`:
 
-This tool can sample any chemical environment type relevant to SMIRFFs, that is atoms, bonds, angles, and proper and improper torsions, one at a time
-Scoring is analous to smarty (explained above), but uses a SMIRFF with existing parameters as a reference insteady of atomtyped molecules.
+This tool can sample any chemical environment type relevant to SMIRNOFFs, that is atoms, bonds, angles, and proper and improper torsions, one at a time
+Scoring is analous to smarty (explained above), but uses a SMIRNOFF with existing parameters as a reference insteady of atomtyped molecules.
 
 Input for this tool can require up to four different file types
 * MOLECULES - any file that are readable in openeye, mol2, sdf, oeb, etc.
 * ODDSFILES - File with the form "smarts     odds" for the different decorator or bond options
 * SMARTS - .smarts file type with the form "smarts/smirks      label/typename"
-* REFERENCE - a SMIRFF file with reference atoms, bonts, angles, torsions, and impropers
+* REFERENCE - a SMIRNOFF file with reference atoms, bonts, angles, torsions, and impropers
 
 ```
 Usage:     Sample over fragment types (atoms, bonds, angles, torsions, or impropers)
-    optionally attempting to match created types to an established SMIRFF.
+    optionally attempting to match created types to an established SMIRNOFF.
     For all files left blank, they will be taken from this module's
     data/odds_files/ subdirectory.
 
@@ -268,7 +263,7 @@ Usage:     Sample over fragment types (atoms, bonds, angles, torsions, or improp
             --atomANDdecors AtomANDdecorFile --bondORbase BondORbaseFile
             --bondANDdecors BondANDdecorFile --atomIndexOdds AtomIndexFile
             --bondIndexOdds BondIndexFile --replacements substitutions
-            --initialFragments initialFragments --SMIRFF referenceSMIRFF
+            --initialFragments initialFragments --SMIRNOFF referenceSMIRNOFF
             --temperature float --verbose verbose
             --iterations iterations --output outputFile]
 
@@ -336,7 +331,7 @@ Options:
                         fragment, for example '[*:1]~[*:2]' for a bond
                         (OPTIONAL)
   -r REFERENCE, --smirff=REFERENCE
-                        Filename defining a SMIRFF force fielce used to
+                        Filename defining a SMIRNOFF force fielce used to
                         determine reference fragment types in provided set of
                         molecules. It may be an absolute file path, a path
                         relative to the current working directory, or a path
@@ -357,18 +352,14 @@ Options:
   -v VERBOSE, --verbose=VERBOSE
                         If True prints minimal information to the commandline
                         during iterations. (OPTIONAL)
-```
+``
 
-## SMIRFF
+## The SMIRNOFF force field format
 
-The SMIRFF forcefield format is available in sample form under data/forcefield, and is handled by `forcefield.py`.
- An example comparing SMIRFF versus AMBER energies for the parm@frosst forcefield is provided under
-examples/SMIRFF_comparison, where two scripts can compare energies for a single molecule or for the entire AlkEthOH set.
-Note that two forcefields are currently available in this format, `Fross_AlkEthOH.ffxml`,
-the parm@frosst forcefield as it should have been for this set, and `Frosst_AlkEthOH_parmAtFrosst.ffxml`,
-the forcefield as it was actually implemented (containing several bugs as noted in the file itself).
-
-It can also be of interest to know what SMIRFF parameters would be applied to particular molecules. Utility functionality for this is provided under `forcefield_labeler.py`, which has generally similar structure to `forcefield.py` but instead of providing OpenMM systems with parameters, it can be applied to specific molecules and returns information about what parameters would be applied.
+The SMIRNOFF force field format is documented [here](https://github.com/open-forcefield-group/openforcefield/blob/master/The-SMIRNOFF-force-field-format.md). 
+It was previously avaialbe in this repository, but has been moved. 
+SMIRNOFF99Frosst, a version of SMIRNOFF mirroring the parameters found in the parm@Frosst force field, is now housed in its own [repository](https://github.com/open-forcefield-group/smirnoff99Frosst).
+`forcefield.py` and other modules required to implement the SMIRNOFF format for simulations in OpenMM have also been moved. These scripts and examples on how to use them can be found at [open-forcefield-group/openforcefield](https://github.com/open-forcefield-group/openforcefield).
 
 ## References
 
