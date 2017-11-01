@@ -8,28 +8,7 @@ Utility subroutines for SMARTY atom type sampling
 # GLOBAL IMPORTS
 #=============================================================================================
 
-import sys
-import string
-
-from optparse import OptionParser # For parsing of command line arguments
-
 import os
-import math
-import copy
-import re
-import numpy
-import random
-
-import openeye.oechem
-import openeye.oeomega
-import openeye.oequacpac
-
-from openeye.oechem import *
-from openeye.oeomega import *
-from openeye.oequacpac import *
-
-import time
-from simtk import unit
 
 #=============================================================================================
 # UTILITY ROUTINES
