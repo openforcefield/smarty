@@ -14,7 +14,7 @@ All tools for implementation of the SMIRNOFF in OpenMM have been moved to the [o
 * `devtools/` - continuous integration and packaging scripts and utilities
 * `oe_license.txt.enc` - encrypted OpenEye license for continuous integration testing
 * `.travis.yml` - travis-ci continuous integration file
-* `utilities/` - some utility functionality relating to the project.
+* `utilities/` - some utility functionality relating to the project, specifically testing the speed of ChemicalEnvironments for sampling in SMIRKY.
 
 ## Prerequisites
 

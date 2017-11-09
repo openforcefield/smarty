@@ -63,12 +63,12 @@ def load_trajectory( trajFile):
                     timeseries[iteration][reftype][k] = data_dict[k][linenr]
                 else:
                     timeseries[iteration][reftype][k.lower()] = data_dict[k][linenr]
-            try:
-                den = float(timeseries[iteration][reftype][denominator])
-                timeseries[iteration][reftype]['fraction'] = timeseries[iteration][reftype][numerator]/den
-            except ZeroDivisionError:
+            den = float(timeseries[iteration][reftype][denominator])
+            if den == 0.0:
                 print("At iteration %s, found %s matched atoms and a denominator of %s for reftype %s..." % (iteration, timeseries[iteration][reftype][numerator], timeseries[iteration][reftype][denominator], reftype))
-                raise
+                timeseries[iteration][reftype]['fraction'] = numpy.nan
+            else:
+                timeseries[iteration][reftype]['fraction'] = timeseries[iteration][reftype][numerator]/den
 
     return timeseries
 
