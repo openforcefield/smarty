@@ -1,3 +1,15 @@
+% Size of smallest ring
+r3
+r4
+r5
+r6
+% Number of rings
+R0
+R1
+R2
+R3
+R4
+R
 % total connectivity
 X1             connections-1
 X2             connections-2
