@@ -4,15 +4,13 @@ r3
 r4                  
 r5                     
 r6                  
-% Number of rings
-R0                  
-R1                  
+% Number of ring bonds
+R0                                
 R2                  
 R3                  
 R4                  
 R
-!R0                  
-!R1                  
+!R0                                  
 !R2                  
 !R3                  
 !R4
