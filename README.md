@@ -239,7 +239,7 @@ Options:
 
 ---
 
-##smirky
+## smirky
 
 Check out examples in `examples/smirky/`:
 
