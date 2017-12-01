@@ -33,5 +33,5 @@ test:
     - smarty
 
 about:
-  home: https://github.com/open-forcefield-group/smarty
+  home: https://github.com/openforcefield/smarty
   license: MIT

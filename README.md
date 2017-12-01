@@ -1,16 +1,16 @@
-[![Build Status](https://travis-ci.org/open-forcefield-group/smarty.svg?branch=master)](https://travis-ci.org/open-forcefield-group/smarty?branch=master)
+[![Build Status](https://travis-ci.org/openforcefield/smarty.svg?branch=master)](https://travis-ci.org/openforcefield/smarty?branch=master)
 [![DOI](https://zenodo.org/badge/60921138.svg)](https://zenodo.org/badge/latestdoi/60921138)
 
 # `smarty`: Exploring Bayesian atom type sampling
 
 This is a simple example of how Bayesian atom type sampling using reversible-jump Markov chain Monte Carlo (RJMCMC) [1] over SMARTS types might work.
 
-All tools for implementation of the SMIRNOFF in OpenMM have been moved to the [openforcefield repository](https://github.com/open-forcefield-group/openforcefield)
+All tools for implementation of the SMIRNOFF in OpenMM have been moved to the [openforcefield repository](https://github.com/openforcefield/openforcefield)
 
 ## Manifest
 
 * `examples/` - some toy examples - look here to get started
-* `smarty/` - simple toolkit illustrating the use of RJMCMC to sample over SMARTS-specified atom types and SMIRKS-specified bonded and non-bonded parameter types. 
+* `smarty/` - simple toolkit illustrating the use of RJMCMC to sample over SMARTS-specified atom types and SMIRKS-specified bonded and non-bonded parameter types.
 * `devtools/` - continuous integration and packaging scripts and utilities
 * `oe_license.txt.enc` - encrypted OpenEye license for continuous integration testing
 * `.travis.yml` - travis-ci continuous integration file
@@ -165,7 +165,7 @@ Currently, the acceptance criteria does not include the full Metropolis-Hastings
 
 ### Elemental Decomposition
 
-The input option `--element` allows a user to specify which atoms types to sample based on atomic number. The default input is 0 (corresponding to no specified atomic number) and will attempt to match all atom types. If an element number is given (i.e. `--element=1` for hydrogen) only atoms with that atomic number are considered. Specifying an element number does not affect any other smarty behavior.  
+The input option `--element` allows a user to specify which atoms types to sample based on atomic number. The default input is 0 (corresponding to no specified atomic number) and will attempt to match all atom types. If an element number is given (i.e. `--element=1` for hydrogen) only atoms with that atomic number are considered. Specifying an element number does not affect any other smarty behavior.
 
 Finally, here is a complete list of input options for smarty. Under `usage` all bracketed parameters are optional.
 ```
@@ -356,10 +356,10 @@ Options:
 
 ## The SMIRNOFF force field format
 
-The SMIRNOFF force field format is documented [here](https://github.com/open-forcefield-group/openforcefield/blob/master/The-SMIRNOFF-force-field-format.md). 
-It was previously avaialbe in this repository, but has been moved. 
-SMIRNOFF99Frosst, a version of SMIRNOFF mirroring the parameters found in the parm@Frosst force field, is now housed in its own [repository](https://github.com/open-forcefield-group/smirnoff99Frosst).
-`forcefield.py` and other modules required to implement the SMIRNOFF format for simulations in OpenMM have also been moved. These scripts and examples on how to use them can be found at [open-forcefield-group/openforcefield](https://github.com/open-forcefield-group/openforcefield).
+The SMIRNOFF force field format is documented [here](https://github.com/openforcefield/openforcefield/blob/master/The-SMIRNOFF-force-field-format.md).
+It was previously avaialbe in this repository, but has been moved.
+SMIRNOFF99Frosst, a version of SMIRNOFF mirroring the parameters found in the parm@Frosst force field, is now housed in its own [repository](https://github.com/openforcefield/smirnoff99Frosst).
+`forcefield.py` and other modules required to implement the SMIRNOFF format for simulations in OpenMM have also been moved. These scripts and examples on how to use them can be found at [openforcefield/openforcefield](https://github.com/openforcefield/openforcefield).
 
 ## References
 
