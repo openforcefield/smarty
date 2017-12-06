@@ -20,7 +20,7 @@ setup(
     description = ("Automated Bayesian atomtype sampling"),
     license = "MIT",
     keywords = "Bayesian atomtype sampling forcefield parameterization",
-    url = "http://github.com/open-forcefield-group/smarty",
+    url = "http://github.com/openforcefield/smarty",
     packages=['smarty', 'smarty/tests', 'smarty/data'],
     long_description=read('README.md'),
     classifiers=[
