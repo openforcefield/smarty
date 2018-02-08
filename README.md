@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/openforcefield/smarty.svg?branch=master)](https://travis-ci.org/openforcefield/smarty?branch=master)
+[![codecov](https://codecov.io/gh/openforcefield/smarty/branch/master/graph/badge.svg)](https://codecov.io/gh/openforcefield/smarty)
 [![DOI](https://zenodo.org/badge/60921138.svg)](https://zenodo.org/badge/latestdoi/60921138)
 
 # `smarty`: Exploring Bayesian atom type sampling
