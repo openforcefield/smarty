@@ -23,7 +23,7 @@ script:
   # Use beta version for partial bond orders
   - pip install --pre -i https://pypi.anaconda.org/openeye/label/beta/simple openeye-toolkits && python -c "import openeye; print(openeye.__version__)"
   # Install openforcefield tools
-  - conda install -c omnia openforcefield=0.0.3
+  - conda install --yes -c omnia openforcefield=0.0.3
   # Build the recipe
   - conda build devtools/conda-recipe
   # Install
