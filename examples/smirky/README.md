@@ -187,5 +187,5 @@ Torsion type hierarchy:
 ## More smirky tests
 
 The results from smirky tests get a bit bulky so we are not storing them on github. 
-We maintain a public (Google Drive Directory)[https://drive.google.com/drive/folders/0BwF2-3puCvfEeWNuNnlsTm1CTlU?usp=sharing]
-storing extensive tests on smirky and smarty. Please keep in mind these tests are on going so documentation for the Google Drive is a work in progress.
+More extensive tests of both SMARTY and SMIRKY are available online:
+Zanette, Camila et al. (2018), Supporting Information: Toward learned chemical perception of force field typing rules, v3, UC Irvine Dash, Dataset, [https://doi.org/10.7280/D1CD4C](https://doi.org/10.7280/D1CD4C)
